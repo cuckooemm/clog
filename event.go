@@ -24,7 +24,7 @@ type Event struct {
 	level Level
 	done  func(msg string)
 	stack bool   // enable error stack trace
-	//ch    []Hook // hooks from context
+	ch    []Hook // hooks from context
 }
 
 type LogObjectMarshaler interface {
@@ -40,7 +40,7 @@ type LogArrayMarshaler interface {
 func newEvent(w LevelWriter, level Level) *Event {
 	e := eventPool.Get().(*Event)
 	e.buf = e.buf[:0]
-	//e.ch = nil
+	e.ch = nil
 	e.buf = trs.AppendBeginMarker(e.buf)
 	e.w = w
 	e.level = level
@@ -97,10 +97,10 @@ func (e *Event) Msg(msg string) {
 	e.msg(msg)
 }
 
-// Send is equivalent to calling Msg("").
+// Done is equivalent to calling Msg("").
 //
 // NOTICE: once this method is called, the *Event should be disposed.
-func (e *Event) Send() {
+func (e *Event) Done() {
 	if e == nil {
 		return
 	}
@@ -115,18 +115,18 @@ func (e *Event) Msgf(format string, v ...interface{}) {
 }
 
 func (e *Event) msg(msg string) {
-	//for _, hook := range e.ch {
-		//hook.Run(e, e.level, msg)
-	//}
+	for _, hook := range e.ch {
+		hook.Run(e, e.level, msg)
+	}
 	if msg != "" {
-		e.buf = trs.AppendString(trs.AppendKey(e.buf, MessageFieldName), msg)
+		e.buf = trs.AppendString(trs.AppendKey(e.buf, messageFieldName), msg)
 	}
 	if e.done != nil {
 		defer e.done(msg)
 	}
 	if err := e.write(); err != nil {
-		if ErrorHandler != nil {
-			ErrorHandler(err)
+		if errorHandler != nil {
+			errorHandler(err)
 		} else {
 			_, _ = fmt.Fprintf(os.Stderr, "clog: could not write to output: %v\n", err)
 		}
@@ -195,7 +195,6 @@ func (e *Event) Object(key string, obj LogObjectMarshaler) *Event {
 	e.appendObject(obj)
 	return e
 }
-
 
 // EmbedObject marshals an object that implement the LogObjectMarshaler interface.
 func (e *Event) EmbedObject(obj LogObjectMarshaler) *Event {
@@ -266,7 +265,7 @@ func (e *Event) RawJSON(key string, b []byte) *Event {
 	if e == nil {
 		return e
 	}
-	e.buf = append(trs.AppendKey(e.buf,key),b...)
+	e.buf = append(trs.AppendKey(e.buf, key), b...)
 	return e
 }
 
@@ -276,7 +275,7 @@ func (e *Event) AnErr(key string, err error) *Event {
 	if e == nil {
 		return e
 	}
-	switch m := ErrorMarshalFunc(err).(type) {
+	switch m := errorMarshalFunc(err).(type) {
 	case nil:
 		return e
 	case LogObjectMarshaler:
@@ -294,7 +293,6 @@ func (e *Event) AnErr(key string, err error) *Event {
 	}
 }
 
-
 // Errs adds the field key with errs as an array of serialized errors to the
 // *Event context.
 func (e *Event) Errs(key string, errs []error) *Event {
@@ -303,7 +301,7 @@ func (e *Event) Errs(key string, errs []error) *Event {
 	}
 	arr := Arr()
 	for _, err := range errs {
-		switch m := ErrorMarshalFunc(err).(type) {
+		switch m := errorMarshalFunc(err).(type) {
 		case LogObjectMarshaler:
 			arr = arr.Object(m)
 		case error:
@@ -321,31 +319,31 @@ func (e *Event) Errs(key string, errs []error) *Event {
 // Err adds the field "error" with serialized err to the *Event context.
 // If err is nil, no field is added.
 //
-// To customize the key name, change zerolog.ErrorFieldName.
+// To customize the key name, change clog.ErrorFieldName.
 //
-// If Stack() has been called before and zerolog.ErrorStackMarshaler is defined,
+// If Stack() has been called before and clog.ErrorStackMarshaler is defined,
 // the err is passed to ErrorStackMarshaler and the result is appended to the
-// zerolog.ErrorStackFieldName.
+// clog.ErrorStackFieldName.
 func (e *Event) Err(err error) *Event {
 	if e == nil {
 		return e
 	}
-	if e.stack && ErrorStackMarshaler != nil {
-		switch m := ErrorStackMarshaler(err).(type) {
+	if e.stack && errorStackMarshaler != nil {
+		switch m := errorStackMarshaler(err).(type) {
 		case nil:
 		case LogObjectMarshaler:
-			e.Object(ErrorStackFieldName, m)
+			e.Object(errorStackFieldName, m)
 		case error:
 			if m != nil && !isNilValue(m) {
-				e.Str(ErrorStackFieldName, m.Error())
+				e.Str(errorStackFieldName, m.Error())
 			}
 		case string:
-			e.Str(ErrorStackFieldName, m)
+			e.Str(errorStackFieldName, m)
 		default:
-			e.Interface(ErrorStackFieldName, m)
+			e.Interface(errorStackFieldName, m)
 		}
 	}
-	return e.AnErr(ErrorFieldName, err)
+	return e.AnErr(errorFieldName, err)
 }
 
 // Stack enables stack trace printing for the error passed to Err().
@@ -358,7 +356,6 @@ func (e *Event) Stack() *Event {
 	e.stack = true
 	return e
 }
-
 
 // Bool adds the field key with val as a bool to the *Event context.
 func (e *Event) Bool(key string, b bool) *Event {
@@ -422,7 +419,6 @@ func (e *Event) Int16(key string, i int16) *Event {
 	e.buf = trs.AppendInt16(trs.AppendKey(e.buf, key), i)
 	return e
 }
-
 
 // Ints16 adds the field key with i as a []int16 to the *Event context.
 func (e *Event) Ints16(key string, i []int16) *Event {
@@ -596,7 +592,7 @@ func (e *Event) Floats64(key string, f []float64) *Event {
 }
 
 // Timestamp adds the current local time as UNIX timestamp to the *Event context with the "time" key.
-// To customize the key name, change zerolog.TimestampFieldName.
+// To customize the key name, change clog.TimestampFieldName.
 //
 // NOTE: It won't dedupe the "time" key if the *Event (or *Context) has one
 // already.
@@ -604,47 +600,47 @@ func (e *Event) Timestamp() *Event {
 	if e == nil {
 		return e
 	}
-	e.buf = trs.AppendTime(trs.AppendKey(e.buf, TimestampFieldName), TimestampFunc(), TimeFieldFormat)
+	e.buf = trs.AppendTime(trs.AppendKey(e.buf, timestampFieldName), timestampFunc(), timeLayoutFormat)
 	return e
 }
 
-// Time adds the field key with t formated as string using zerolog.TimeFieldFormat.
+// Time adds the field key with t formated as string using clog.TimeFieldFormat.
 func (e *Event) Time(key string, t time.Time) *Event {
 	if e == nil {
 		return e
 	}
-	e.buf = trs.AppendTime(trs.AppendKey(e.buf, key), t, TimeFieldFormat)
+	e.buf = trs.AppendTime(trs.AppendKey(e.buf, key), t, timeLayoutFormat)
 	return e
 }
 
-// Times adds the field key with t formated as string using zerolog.TimeFieldFormat.
+// Times adds the field key with t formated as string using clog.TimeFieldFormat.
 func (e *Event) Times(key string, t []time.Time) *Event {
 	if e == nil {
 		return e
 	}
-	e.buf = trs.AppendTimes(trs.AppendKey(e.buf, key), t, TimeFieldFormat)
+	e.buf = trs.AppendTimes(trs.AppendKey(e.buf, key), t, timeLayoutFormat)
 	return e
 }
 
-// Dur adds the field key with duration d stored as zerolog.DurationFieldUnit.
-// If zerolog.DurationFieldInteger is true, durations are rendered as integer
+// Dur adds the field key with duration d stored as clog.DurationFieldUnit.
+// If clog.DurationFieldInteger is true, durations are rendered as integer
 // instead of float.
 func (e *Event) Dur(key string, d time.Duration) *Event {
 	if e == nil {
 		return e
 	}
-	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d, DurationFieldUnit, DurationFieldInteger)
+	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d, durationFieldUnit, durationFieldInteger)
 	return e
 }
 
-// Durs adds the field key with duration d stored as zerolog.DurationFieldUnit.
-// If zerolog.DurationFieldInteger is true, durations are rendered as integer
+// Durs adds the field key with duration d stored as clog.DurationFieldUnit.
+// If clog.DurationFieldInteger is true, durations are rendered as integer
 // instead of float.
 func (e *Event) Durs(key string, d []time.Duration) *Event {
 	if e == nil {
 		return e
 	}
-	e.buf = trs.AppendDurations(trs.AppendKey(e.buf, key), d, DurationFieldUnit, DurationFieldInteger)
+	e.buf = trs.AppendDurations(trs.AppendKey(e.buf, key), d, durationFieldUnit, durationFieldInteger)
 	return e
 }
 
@@ -659,7 +655,7 @@ func (e *Event) TimeDiff(key string, t time.Time, start time.Time) *Event {
 	if t.After(start) {
 		d = t.Sub(start)
 	}
-	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d, DurationFieldUnit, DurationFieldInteger)
+	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d, durationFieldUnit, durationFieldInteger)
 	return e
 }
 
@@ -675,13 +671,13 @@ func (e *Event) Interface(key string, i interface{}) *Event {
 	return e
 }
 
-// Caller adds the file:line of the caller with the zerolog.CallerFieldName key.
+// Caller adds the file:line of the caller with the clog.CallerFieldName key.
 // The argument skip is the number of stack frames to ascend
 // Skip If not passed, use the global variable CallerSkipFrameCount
 func (e *Event) Caller(skip ...int) *Event {
-	sk := CallerSkipFrameCount
+	sk := callerSkipFrameCount
 	if len(skip) > 0 {
-		sk = skip[0] + CallerSkipFrameCount
+		sk = skip[0] + callerSkipFrameCount
 	}
 	return e.caller(sk)
 }
@@ -694,7 +690,7 @@ func (e *Event) caller(skip int) *Event {
 	if !ok {
 		return e
 	}
-	e.buf = trs.AppendString(trs.AppendKey(e.buf, CallerFieldName), CallerMarshalFunc(file, line))
+	e.buf = trs.AppendString(trs.AppendKey(e.buf, callerFieldName), callerMarshalFunc(file, line))
 	return e
 }
 

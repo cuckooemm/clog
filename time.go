@@ -6,21 +6,20 @@ import (
 )
 
 const (
-	// Import from zerolog/global.go
-	timeFormatS   = ""
-	timeFormatUnixMs = "UNIXMS"
-	timeFormatUnixMicro = "UNIXMICRO"
+	TimeFormatSec       = ""
+	TimeFormatUnixMs    = "UNIXMS"
+	TimeFormatUnixMicro = "UNIXMICRO"
 )
 
 // AppendTime formats the input time with the given format
 // and appends the encoded string to the input byte slice.
 func (s Transform) AppendTime(dst []byte, t time.Time, format string) []byte {
 	switch format {
-	case timeFormatS:
+	case TimeFormatSec:
 		return s.AppendInt64(dst, t.Unix())
-	case timeFormatUnixMs:
+	case TimeFormatUnixMs:
 		return s.AppendInt64(dst, t.UnixNano()/1e6)
-	case timeFormatUnixMicro:
+	case TimeFormatUnixMicro:
 		return s.AppendInt64(dst, t.UnixNano()/1e3)
 	}
 	return append(t.AppendFormat(append(dst, '"'), format), '"')
@@ -53,7 +52,6 @@ func (s Transform) AppendDurations(dst []byte, vals []time.Duration, unit time.D
 	dst = append(dst, ']')
 	return dst
 }
-
 
 func appendUnixTimes(dst []byte, vals []time.Time) []byte {
 	if len(vals) == 0 {

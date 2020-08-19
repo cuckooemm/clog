@@ -1,66 +1,99 @@
 package clog
 
 import (
+	"os"
 	"strconv"
 	"sync/atomic"
 	"time"
 )
 
 const (
-	maxCap = 1 << 16 // 64KiB
-	initCap = 1 << 9 // 512B
+	maxCap  = 1 << 16 // 64KiB
+	initCap = 1 << 9  // 512B
 )
 
+// Level defines log levels.
+type Level int8
+
+const (
+	// DebugLevel defines debug log level.
+	DebugLevel Level = iota
+	// InfoLevel defines info log level.
+	InfoLevel
+	// WarnLevel defines warn log level.
+	WarnLevel
+	// ErrorLevel defines error log level.
+	ErrorLevel
+	// FatalLevel defines fatal log level.
+	FatalLevel
+	// PanicLevel defines panic log level.
+	PanicLevel
+	// NoLevel defines an absent log level.
+	NoLevel
+	// Disabled disables the logger.
+	Disabled
+
+	// TraceLevel defines trace log level.
+	TraceLevel Level = -1
+)
+
+func init() {
+	curPath, _ := os.Getwd()
+	curPathIdx = len(curPath)
+}
+
 var (
+	// 全局日志等级
+	gLevel     = new(int32)
+	curPathIdx int
 	// TimeFieldFormat defines the time format of the Time field type. If set to
 	// TimeFormatUnix, TimeFormatUnixMs or TimeFormatUnixMicro, the time is formatted as an UNIX
 	// timestamp as integer.
-	TimeFieldFormat = time.RFC3339
+	timeLayoutFormat = time.RFC3339
 	// LevelFieldName is the field name used for the level field.
-	LevelFieldName = "level"
+	levelFieldName = "level"
 	// TimestampFieldName is the field name used for the timestamp field.
-	TimestampFieldName = "time"
+	timestampFieldName = "time"
 	// ErrorFieldName is the field name used for error fields.
-	ErrorFieldName = "error"
+	errorFieldName = "error"
 	// ErrorStackFieldName is the field name used for error stacks.
-	ErrorStackFieldName = "stack"
-	MessageFieldName = "message"
-
+	errorStackFieldName = "stack"
+	messageFieldName    = "message"
+	// CallerFieldName is the field name used for caller field.
+	callerFieldName = "caller"
 	// ErrorHandler 当向输出源写入数据时遇到错误，此方法调用，默认输出至stderr.
 	// 此方法必须为非阻塞且线程安全
-	ErrorHandler func(err error)
-	ErrorMarshalFunc = func(err error) interface{} {
+	errorHandler     func(err error)
+	errorMarshalFunc = func(err error) interface{} {
 		return err
 	}
-	LevelFieldMarshalFunc = func(l Level) string {
+	levelFieldMarshalFunc = func(l Level) string {
 		return l.String()
 	}
-	// TimestampFunc defines the function called to generate a timestamp.
-	TimestampFunc = time.Now
+	// timestampFunc defines the function called to generate a timestamp.
+	timestampFunc = time.Now
 	// ErrorStackMarshaler extract the stack from err if any.
-	ErrorStackMarshaler func(err error) interface{}
+	errorStackMarshaler func(err error) interface{}
 
-	// DurationFieldUnit defines the unit for time.Duration type fields added
-	// using the Dur method.
-	DurationFieldUnit = time.Millisecond
+	// durationFieldUnit defines the unit for time.Duration type fields added
+	// timeDuration / durationFieldUnit
+	durationFieldUnit = time.Millisecond
 
 	// DurationFieldInteger renders Dur fields as integer instead of float if
 	// set to true.
-	DurationFieldInteger = false
-	// CallerFieldName is the field name used for caller field.
-	CallerFieldName = "caller"
+	durationFieldInteger = false
 
-	CallerMarshalFunc = func(file string, line int) string {
+	callerMarshalFunc = func(file string, line int) string {
+		if curPathIdx > 0 {
+			return "." + file[curPathIdx:] + ":" + strconv.Itoa(line)
+		}
 		return file + ":" + strconv.Itoa(line)
 	}
 
 	// CallerSkipFrameCount is the number of stack frames to skip to find the caller.
-	CallerSkipFrameCount = 2
+	callerSkipFrameCount = 2
 )
-var (
-	gLevel          = new(int32)
-	disableSampling = new(int32)
-)
+
 // SetGlobalLevel sets the global override for log level. If this
 // values is raised, all Loggers will use at least this value.
 //
@@ -72,8 +105,4 @@ func SetGlobalLevel(l Level) {
 // GlobalLevel returns the current global log level
 func GlobalLevel() Level {
 	return Level(atomic.LoadInt32(gLevel))
-}
-
-func samplingDisabled() bool {
-	return atomic.LoadInt32(disableSampling) == 1
 }

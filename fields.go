@@ -6,6 +6,7 @@ import (
 	"time"
 	"unsafe"
 )
+
 func isNilValue(i interface{}) bool {
 	return (*[2]uintptr)(unsafe.Pointer(&i))[1] == 0
 }
@@ -33,7 +34,7 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 		case []byte:
 			dst = trs.AppendBytes(dst, val)
 		case error:
-			switch m := ErrorMarshalFunc(val).(type) {
+			switch m := errorMarshalFunc(val).(type) {
 			case LogObjectMarshaler:
 				e := newEvent(nil, 0)
 				e.buf = e.buf[:0]
@@ -54,7 +55,7 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 		case []error:
 			dst = trs.AppendArrayStart(dst)
 			for i, err := range val {
-				switch m := ErrorMarshalFunc(err).(type) {
+				switch m := errorMarshalFunc(err).(type) {
 				case LogObjectMarshaler:
 					e := newEvent(nil, 0)
 					e.buf = e.buf[:0]
@@ -105,9 +106,9 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 		case float64:
 			dst = trs.AppendFloat64(dst, val)
 		case time.Time:
-			dst = trs.AppendTime(dst, val, TimeFieldFormat)
+			dst = trs.AppendTime(dst, val, timeLayoutFormat)
 		case time.Duration:
-			dst = trs.AppendDuration(dst, val, DurationFieldUnit, DurationFieldInteger)
+			dst = trs.AppendDuration(dst, val, durationFieldUnit, durationFieldInteger)
 		case *string:
 			if val != nil {
 				dst = trs.AppendString(dst, *val)
@@ -194,13 +195,13 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 			}
 		case *time.Time:
 			if val != nil {
-				dst = trs.AppendTime(dst, *val, TimeFieldFormat)
+				dst = trs.AppendTime(dst, *val, timeLayoutFormat)
 			} else {
 				dst = trs.AppendNil(dst)
 			}
 		case *time.Duration:
 			if val != nil {
-				dst = trs.AppendDuration(dst, *val, DurationFieldUnit, DurationFieldInteger)
+				dst = trs.AppendDuration(dst, *val, durationFieldUnit, durationFieldInteger)
 			} else {
 				dst = trs.AppendNil(dst)
 			}
@@ -233,9 +234,9 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 		case []float64:
 			dst = trs.AppendFloats64(dst, val)
 		case []time.Time:
-			dst = trs.AppendTimes(dst, val, TimeFieldFormat)
+			dst = trs.AppendTimes(dst, val, timeLayoutFormat)
 		case []time.Duration:
-			dst = trs.AppendDurations(dst, val, DurationFieldUnit, DurationFieldInteger)
+			dst = trs.AppendDurations(dst, val, durationFieldUnit, durationFieldInteger)
 		case nil:
 			dst = trs.AppendNil(dst)
 		case net.IP:
@@ -250,4 +251,3 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 	}
 	return dst
 }
-

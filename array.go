@@ -35,7 +35,7 @@ func Arr() *Array {
 	return a
 }
 
-// MarshalZerologArray method here is no-op - since data is
+// MarshalClogArray method here is no-op - since data is
 // already in the needed format.
 func (*Array) MarshalArray(*Array) {
 }
@@ -87,7 +87,7 @@ func (a *Array) RawJSON(val []byte) *Array {
 
 // Err serializes and appends the err to the array.
 func (a *Array) Err(err error) *Array {
-	switch m := ErrorMarshalFunc(err).(type) {
+	switch m := errorMarshalFunc(err).(type) {
 	case LogObjectMarshaler:
 		e := newEvent(nil, 0)
 		e.buf = e.buf[:0]
@@ -187,15 +187,15 @@ func (a *Array) Float64(f float64) *Array {
 	return a
 }
 
-// Time append append t formated as string using zerolog.TimeFieldFormat.
+// Time append append t formated as string using clog.timeFieldFormat.
 func (a *Array) Time(t time.Time) *Array {
-	a.buf = trs.AppendTime(trs.AppendArrayDelim(a.buf), t, TimeFieldFormat)
+	a.buf = trs.AppendTime(trs.AppendArrayDelim(a.buf), t, timeLayoutFormat)
 	return a
 }
 
 // Dur append append d to the array.
 func (a *Array) Dur(d time.Duration) *Array {
-	a.buf = trs.AppendDuration(trs.AppendArrayDelim(a.buf), d, DurationFieldUnit, DurationFieldInteger)
+	a.buf = trs.AppendDuration(trs.AppendArrayDelim(a.buf), d, durationFieldUnit, durationFieldInteger)
 	return a
 }
 

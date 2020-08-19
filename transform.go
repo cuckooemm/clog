@@ -480,9 +480,9 @@ func (s Transform) AppendStrings(dst []byte, val []string) []byte {
 
 func (s Transform) AppendTimes(dst []byte, val []time.Time, format string) []byte {
 	switch format {
-	case timeFormatS:
+	case TimeFormatSec:
 		return appendUnixTimes(dst, val)
-	case timeFormatUnixMs:
+	case TimeFormatUnixMs:
 		return appendUnixMsTimes(dst, val)
 	}
 	if len(val) == 0 {

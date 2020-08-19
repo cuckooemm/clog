@@ -8,31 +8,6 @@ import (
 	"strconv"
 )
 
-// Level defines log levels.
-type Level int8
-
-const (
-	// DebugLevel defines debug log level.
-	DebugLevel Level = iota
-	// InfoLevel defines info log level.
-	InfoLevel
-	// WarnLevel defines warn log level.
-	WarnLevel
-	// ErrorLevel defines error log level.
-	ErrorLevel
-	// FatalLevel defines fatal log level.
-	FatalLevel
-	// PanicLevel defines panic log level.
-	PanicLevel
-	// NoLevel defines an absent log level.
-	NoLevel
-	// Disabled disables the logger.
-	Disabled
-
-	// TraceLevel defines trace log level.
-	TraceLevel Level = -1
-)
-
 func (l Level) String() string {
 	switch l {
 	case TraceLevel:
@@ -54,36 +29,40 @@ func (l Level) String() string {
 	}
 	return ""
 }
+
 type Logger struct {
 	w       LevelWriter
 	level   Level
-	//sampler Sampler
 	context []byte
-	//hooks   []Hook
+	hooks   []Hook
+	preHook []Hook
 }
 
 func ParseLevel(levelStr string) (Level, error) {
 	switch levelStr {
-	case LevelFieldMarshalFunc(TraceLevel):
+	case levelFieldMarshalFunc(TraceLevel):
 		return TraceLevel, nil
-	case LevelFieldMarshalFunc(DebugLevel):
+	case levelFieldMarshalFunc(DebugLevel):
 		return DebugLevel, nil
-	case LevelFieldMarshalFunc(InfoLevel):
+	case levelFieldMarshalFunc(InfoLevel):
 		return InfoLevel, nil
-	case LevelFieldMarshalFunc(WarnLevel):
+	case levelFieldMarshalFunc(WarnLevel):
 		return WarnLevel, nil
-	case LevelFieldMarshalFunc(ErrorLevel):
+	case levelFieldMarshalFunc(ErrorLevel):
 		return ErrorLevel, nil
-	case LevelFieldMarshalFunc(FatalLevel):
+	case levelFieldMarshalFunc(FatalLevel):
 		return FatalLevel, nil
-	case LevelFieldMarshalFunc(PanicLevel):
+	case levelFieldMarshalFunc(PanicLevel):
 		return PanicLevel, nil
-	case LevelFieldMarshalFunc(NoLevel):
+	case levelFieldMarshalFunc(NoLevel):
 		return NoLevel, nil
 	}
 	return NoLevel, fmt.Errorf("unknown Level String: '%s', defaulting to NoLevel", levelStr)
 }
 
+func NewOption() *Options {
+	return &Options{}
+}
 func New(w io.Writer) Logger {
 	if w == nil {
 		w = ioutil.Discard
@@ -100,20 +79,13 @@ func Nop() Logger {
 	return New(nil).Level(Disabled)
 }
 
-
 // Output duplicates the current logger and sets w as its output.
-func (l Logger) Output(w io.Writer) Logger {
-	l2 := New(w)
-	l2.level = l.level
-	//l2.sampler = l.sampler
-	//if len(l.hooks) > 0 {
-	//	l2.hooks = append(l2.hooks, l.hooks...)
-	//}
-	if l.context != nil {
-		l2.context = make([]byte, len(l.context), cap(l.context))
-		copy(l2.context, l.context)
+func (l *Logger) output(w io.Writer) {
+	lw, ok := w.(LevelWriter)
+	if !ok {
+		lw = levelWriterAdapter{w}
 	}
-	return l2
+	l.w = lw
 }
 
 // With creates a child logger with the field added to its context.
@@ -146,7 +118,6 @@ func (l Logger) Output(w io.Writer) Logger {
 //	c := update(Context{*l})
 //	l.context = c.l.context
 //}
-
 
 // Level creates a child logger with the minimum accepted level set to level.
 func (l Logger) Level(lvl Level) Logger {
@@ -303,9 +274,13 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 		return nil
 	}
 	e := newEvent(l.w, level)
+	for _, hook := range l.preHook {
+		hook.Run(e, level, "")
+	}
 	e.done = done
+	e.ch = l.hooks
 	if level != NoLevel {
-		e.Str(LevelFieldName, LevelFieldMarshalFunc(level))
+		e.Str(levelFieldName, levelFieldMarshalFunc(level))
 	}
 	if l.context != nil && len(l.context) > 1 {
 		e.buf = trs.AppendObjectData(e.buf, l.context)
