@@ -60,8 +60,8 @@ func ParseLevel(levelStr string) (Level, error) {
 	return NoLevel, fmt.Errorf("unknown Level String: '%s', defaulting to NoLevel", levelStr)
 }
 
-func NewOption() *Options {
-	return &Options{}
+func NewOption() *options {
+	return &options{}
 }
 func New(w io.Writer) Logger {
 	if w == nil {

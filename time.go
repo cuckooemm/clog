@@ -13,7 +13,7 @@ const (
 
 // AppendTime formats the input time with the given format
 // and appends the encoded string to the input byte slice.
-func (s Transform) AppendTime(dst []byte, t time.Time, format string) []byte {
+func (s transform) AppendTime(dst []byte, t time.Time, format string) []byte {
 	switch format {
 	case TimeFormatSec:
 		return s.AppendInt64(dst, t.Unix())
@@ -27,7 +27,7 @@ func (s Transform) AppendTime(dst []byte, t time.Time, format string) []byte {
 
 // AppendDuration formats the input duration with the given unit & format
 // and appends the encoded string to the input byte slice.
-func (s Transform) AppendDuration(dst []byte, d time.Duration, unit time.Duration, useInt bool) []byte {
+func (s transform) AppendDuration(dst []byte, d time.Duration, unit time.Duration, useInt bool) []byte {
 	// TODO time.duration 格式
 	//s.AppendString(dst, d.String())
 	if useInt {
@@ -38,7 +38,7 @@ func (s Transform) AppendDuration(dst []byte, d time.Duration, unit time.Duratio
 
 // AppendDurations formats the input durations with the given unit & format
 // and appends the encoded string list to the input byte slice.
-func (s Transform) AppendDurations(dst []byte, vals []time.Duration, unit time.Duration, useInt bool) []byte {
+func (s transform) AppendDurations(dst []byte, vals []time.Duration, unit time.Duration, useInt bool) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
 	}
