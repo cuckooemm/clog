@@ -627,12 +627,12 @@ func TestErrorMarshalFunc(t *testing.T) {
 	out.Reset()
 
 	// test overriding the ErrorMarshalFunc
-	originalErrorMarshalFunc := ErrorMarshalFunc
+	originalErrorMarshalFunc := errorMarshalFunc
 	defer func() {
-		ErrorMarshalFunc = originalErrorMarshalFunc
+		errorMarshalFunc = originalErrorMarshalFunc
 	}()
 
-	ErrorMarshalFunc = func(err error) interface{} {
+	errorMarshalFunc = func(err error) interface{} {
 		return err.Error() + ": marshaled string"
 	}
 	log.Log().Err(errors.New("err")).Msg("msg")
@@ -641,7 +641,7 @@ func TestErrorMarshalFunc(t *testing.T) {
 	}
 
 	out.Reset()
-	ErrorMarshalFunc = func(err error) interface{} {
+	errorMarshalFunc = func(err error) interface{} {
 		return errors.New(err.Error() + ": new error")
 	}
 	log.Log().Err(errors.New("err")).Msg("msg")
@@ -650,7 +650,7 @@ func TestErrorMarshalFunc(t *testing.T) {
 	}
 
 	out.Reset()
-	ErrorMarshalFunc = func(err error) interface{} {
+	errorMarshalFunc = func(err error) interface{} {
 		return loggableError{err}
 	}
 	log.Log().Err(errors.New("err")).Msg("msg")
@@ -674,9 +674,9 @@ func TestCallerMarshalFunc(t *testing.T) {
 	out.Reset()
 
 	// test custom behavior. In this case we'll take just the last directory
-	origCallerMarshalFunc := CallerMarshalFunc
-	defer func() { CallerMarshalFunc = origCallerMarshalFunc }()
-	CallerMarshalFunc = func(file string, line int) string {
+	origCallerMarshalFunc := callerMarshalFunc
+	defer func() { callerMarshalFunc = origCallerMarshalFunc }()
+	callerMarshalFunc = func(file string, line int) string {
 		parts := strings.Split(file, "/")
 		if len(parts) > 1 {
 			return strings.Join(parts[len(parts)-2:], "/") + ":" + strconv.Itoa(line)
@@ -685,7 +685,7 @@ func TestCallerMarshalFunc(t *testing.T) {
 		return file + ":" + strconv.Itoa(line)
 	}
 	_, file, line, _ = runtime.Caller(0)
-	caller = CallerMarshalFunc(file, line+2)
+	caller = callerMarshalFunc(file, line+2)
 	log.Log().Caller().Msg("msg")
 	if got, want := out.String(), `{"caller":"`+caller+`","message":"msg"}`+"\n"; got != want {
 		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -693,12 +693,12 @@ func TestCallerMarshalFunc(t *testing.T) {
 }
 
 func TestLevelFieldMarshalFunc(t *testing.T) {
-	origLevelFieldMarshalFunc := LevelFieldMarshalFunc
-	LevelFieldMarshalFunc = func(l Level) string {
+	origLevelFieldMarshalFunc := levelFieldMarshalFunc
+	levelFieldMarshalFunc = func(l Level) string {
 		return strings.ToUpper(l.String())
 	}
 	defer func() {
-		LevelFieldMarshalFunc = origLevelFieldMarshalFunc
+		levelFieldMarshalFunc = origLevelFieldMarshalFunc
 	}()
 	out := &bytes.Buffer{}
 	log := New(out)
@@ -739,7 +739,7 @@ func (w errWriter) Write(p []byte) (n int, err error) {
 func TestErrorHandler(t *testing.T) {
 	var got error
 	want := errors.New("write error")
-	ErrorHandler = func(err error) {
+	errorHandler = func(err error) {
 		got = err
 	}
 	log := New(errWriter{want})

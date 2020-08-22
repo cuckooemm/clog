@@ -84,9 +84,9 @@ var (
 	durationFieldInteger = false
 
 	callerMarshalFunc = func(file string, line int) string {
-		if curPathIdx > 0 {
-			return "." + file[curPathIdx:] + ":" + strconv.Itoa(line)
-		}
+		//if curPathIdx > 0 {
+		//	return "." + file[curPathIdx:] + ":" + strconv.Itoa(line)
+		//}
 		return file + ":" + strconv.Itoa(line)
 	}
 
