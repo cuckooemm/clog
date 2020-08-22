@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 )
 
 func TestFileWrite_Write(t *testing.T) {
@@ -28,6 +27,4 @@ func TestFileWrite_Write(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	t.Log("weite line  = ", write.getCount())
-	time.Sleep(time.Minute)
 }

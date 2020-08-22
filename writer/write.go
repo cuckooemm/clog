@@ -14,28 +14,21 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 const (
 	backupTimeFormat = "2006-01-02T15-04-05.000"
 	compressSuffix   = ".gz"
-	defaultMaxSize   = 100
 )
 
 var (
 	currentTime = time.Now
-	// megabyte is the conversion factor between MaxSize and bytes.  It is a
-	// variable so tests can mock it out and not need to write megabytes of data
-	// to disk.
-	megabyte = 1024 * 1024
 )
 
 type FileWrite struct {
 	path       string
 	dirPath    string
-	count      int64
 	name       string
 	maxSize    int64 // 文件最大大小
 	lastSize   int64 // 剩余可写空间
@@ -79,12 +72,10 @@ func newFileWrite(path string, size, line, age, backups int64, compress bool) *F
 	if err := fw.firstOpenExistOrNew(); err != nil {
 		panic(err)
 	}
-	//
+
 	return fw
 }
-func (fw *FileWrite) getCount() int64 {
-	return atomic.LoadInt64(&fw.count)
-}
+
 func (fw *FileWrite) WriteLevel(level clog.Level, p []byte) (n int, err error) {
 	return fw.Write(p)
 }
@@ -92,7 +83,6 @@ func (fw *FileWrite) WriteLevel(level clog.Level, p []byte) (n int, err error) {
 func (fw *FileWrite) Write(p []byte) (n int, err error) {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
-	fw.count++
 	var writeLen = int64(len(p))
 	if writeLen > fw.lastSize {
 		if err := fw.rotate(); err != nil {
@@ -366,14 +356,6 @@ func compressLogFile(src, dst string) (err error) {
 	}
 
 	return nil
-}
-
-// max returns the maximum size in bytes of log files before rolling.
-func (fw *FileWrite) max() int64 {
-	if fw.maxSize == 0 {
-		return int64(defaultMaxSize * megabyte)
-	}
-	return int64(fw.maxSize) * int64(megabyte)
 }
 
 func lineCounter(r io.Reader) (int64, error) {
