@@ -9,7 +9,7 @@ import (
 func main() {
 	//clog.SetGlobalLevel()
 	path := "./log/api.log"
-	write := writer.NewWrite(path).WithBackups(100).WithCompress().WithMaxAge(0).WithMaxSize(1024 * 1024).Done()
+	write := writer.NewWrite(path).WithBackups(100).WithCompress().WithMaxAge(0).WithMaxSize(writer.MB * 10).Done()
 	clog.NewOption().WithLogLevel(clog.DebugLevel).WithTimestamp().WithWriter(write).Default()
 	clog.Set.SetTimeFormat(clog.TimeFormatUnixMicro).SetCallerSkipFrameCount(2)
 	wg := &sync.WaitGroup{}

@@ -30,21 +30,20 @@ type FileWrite struct {
 	path       string
 	dirPath    string
 	name       string
-	maxSize    int64 // 文件最大大小
-	lastSize   int64 // 剩余可写空间
-	maxLine    int64 // 文件最大可写行
-	lastLine   int64 // 文件剩余可写行
-	maxAge     int64 // 备份文件保存时间
-	maxBackups int64 // 备份文件数量
-	compress   bool  // 备份文件是否压缩
-	// 多久后的文件开启压缩   文件压缩后缀
-	file      *os.File
-	mu        sync.Mutex
-	millCh    chan struct{}
-	startMill sync.Once
+	maxSize    int  // 文件最大大小
+	lastSize   int  // 剩余可写空间
+	maxLine    int  // 文件最大可写行
+	lastLine   int  // 文件剩余可写行
+	maxDay     int  // 备份文件保存时间
+	maxBackups int  // 备份文件数量
+	compress   bool // 备份文件是否压缩
+	file       *os.File
+	mu         sync.Mutex
+	millCh     chan struct{}
+	startMill  sync.Once
 }
 
-func newFileWrite(path string, size, line, age, backups int64, compress bool) *FileWrite {
+func newFileWrite(path string, size, line, day, backups int, compress bool) *FileWrite {
 	var fw = new(FileWrite)
 	fw.path = path
 	fw.dirPath = filepath.Dir(path)
@@ -52,7 +51,7 @@ func newFileWrite(path string, size, line, age, backups int64, compress bool) *F
 		panic(err)
 	}
 	fw.name = filepath.Base(path)
-	fw.maxAge = age
+	fw.maxDay = day
 	fw.maxBackups = backups
 	fw.maxSize = size
 	if fw.maxSize <= 0 {
@@ -62,7 +61,7 @@ func newFileWrite(path string, size, line, age, backups int64, compress bool) *F
 	if fw.maxLine <= 0 {
 		fw.maxLine = math.MaxInt64
 	}
-	if fw.maxAge > 0 || fw.compress || fw.maxBackups > 0 {
+	if fw.maxDay > 0 || fw.compress || fw.maxBackups > 0 {
 		fw.millCh = make(chan struct{}, 1)
 		go fw.millRun()
 		fw.mill()
@@ -83,8 +82,7 @@ func (fw *FileWrite) WriteLevel(level clog.Level, p []byte) (n int, err error) {
 func (fw *FileWrite) Write(p []byte) (n int, err error) {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
-	var writeLen = int64(len(p))
-	if writeLen > fw.lastSize {
+	if len(p) > fw.lastSize {
 		if err := fw.rotate(); err != nil {
 			return 0, err
 		}
@@ -96,7 +94,7 @@ func (fw *FileWrite) Write(p []byte) (n int, err error) {
 	}
 	fw.lastLine--
 	n, err = fw.file.Write(p)
-	fw.lastSize -= int64(n)
+	fw.lastSize -= n
 	return n, err
 }
 
@@ -119,10 +117,10 @@ func (fw *FileWrite) firstOpenExistOrNew() error {
 		return fw.openNew()
 	}
 
-	if info.Size() >= fw.maxSize {
+	if info.Size() >= int64(fw.maxSize) {
 		return fw.rotate()
 	}
-	fw.lastSize = fw.maxSize - info.Size()
+	fw.lastSize = int(int64(fw.maxSize) - info.Size())
 	// 得到文件当前行数
 	if fw.lastLine, err = lineCounter(fw.file); err != nil {
 		return err
@@ -165,7 +163,7 @@ func (fw *FileWrite) millRunOnce() {
 	}
 	var compress, remove []logInfo
 
-	if fw.maxBackups > 0 && fw.maxBackups < int64(len(files)) {
+	if fw.maxBackups > 0 && fw.maxBackups < len(files) {
 		preserved := make(map[string]struct{})
 		var remaining []logInfo
 		for _, f := range files {
@@ -176,7 +174,7 @@ func (fw *FileWrite) millRunOnce() {
 				fn = fn[:len(fn)-len(compressSuffix)]
 			}
 			preserved[fn] = struct{}{}
-			if int64(len(preserved)) > fw.maxBackups {
+			if len(preserved) > fw.maxBackups {
 				remove = append(remove, f)
 			} else {
 				remaining = append(remaining, f)
@@ -184,8 +182,8 @@ func (fw *FileWrite) millRunOnce() {
 		}
 		files = remaining
 	}
-	if fw.maxAge > 0 {
-		cutoff := currentTime().AddDate(0, 0, int(-fw.maxAge))
+	if fw.maxDay > 0 {
+		cutoff := currentTime().AddDate(0, 0, -fw.maxDay)
 		var remaining []logInfo
 		for _, f := range files {
 			if f.timestamp.Before(cutoff) {
@@ -358,16 +356,16 @@ func compressLogFile(src, dst string) (err error) {
 	return nil
 }
 
-func lineCounter(r io.Reader) (int64, error) {
+func lineCounter(r io.Reader) (int, error) {
 	var (
-		buf           = make([]byte, 32*1024)
-		count   int64 = 0
-		lineSep       = []byte{'\n'}
+		buf     = make([]byte, 32*1024)
+		count   = 0
+		lineSep = []byte{'\n'}
 	)
 
 	for {
 		c, err := r.Read(buf)
-		count += int64(bytes.Count(buf[:c], lineSep))
+		count += bytes.Count(buf[:c], lineSep)
 		switch {
 		case err == io.EOF:
 			return count, nil
