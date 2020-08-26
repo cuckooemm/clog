@@ -88,37 +88,6 @@ func (l *Logger) output(w io.Writer) {
 	l.w = lw
 }
 
-// With creates a child logger with the field added to its context.
-//func (l Logger) With() Context {
-//	context := l.context
-//	l.context = make([]byte, 0, 500)
-//	if context != nil {
-//		l.context = append(l.context, context...)
-//	} else {
-//		// This is needed for AppendKey to not check len of input
-//		// thus making it inlinable
-//		l.context = trs.AppendBeginMarker(l.context)
-//	}
-//	return Context{l}
-//}
-
-// UpdateContext updates the internal logger's context.
-//
-// Use this method with caution. If unsure, prefer the With method.
-//func (l *Logger) UpdateContext(update func(c Context) Context) {
-//	if l == disabledLogger {
-//		return
-//	}
-//	if cap(l.context) == 0 {
-//		l.context = make([]byte, 0, 500)
-//	}
-//	if len(l.context) == 0 {
-//		l.context = trs.AppendBeginMarker(l.context)
-//	}
-//	c := update(Context{*l})
-//	l.context = c.l.context
-//}
-
 // Level creates a child logger with the minimum accepted level set to level.
 func (l Logger) Level(lvl Level) Logger {
 	l.level = lvl
@@ -130,17 +99,11 @@ func (l Logger) GetLevel() Level {
 	return l.level
 }
 
-// Sample returns a logger with the s sampler.
-//func (l Logger) Sample(s Sampler) Logger {
-//	l.sampler = s
-//	return l
-//}
-
 // Hook returns a logger with the h Hook.
-//func (l Logger) Hook(h Hook) Logger {
-//	l.hooks = append(l.hooks, h)
-//	return l
-//}
+func (l Logger) Hook(h Hook) Logger {
+	l.hooks = append(l.hooks, h)
+	return l
+}
 
 // Trace starts a new message with trace level.
 //

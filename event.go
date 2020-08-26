@@ -97,10 +97,10 @@ func (e *Event) Msg(msg string) {
 	e.msg(msg)
 }
 
-// Done is equivalent to calling Msg("").
+// Cease is equivalent to calling Msg("").
 //
 // NOTICE: once this method is called, the *Event should be disposed.
-func (e *Event) Done() {
+func (e *Event) Cease() {
 	if e == nil {
 		return
 	}
@@ -610,6 +610,15 @@ func (e *Event) Time(key string, t time.Time) *Event {
 		return e
 	}
 	e.buf = trs.AppendTime(trs.AppendKey(e.buf, key), t, timeLayoutFormat)
+	return e
+}
+
+// Time adds the field key with t formated as string using clog.TimeFieldFormat.
+func (e *Event) TimeF(key string, t time.Time, format string) *Event {
+	if e == nil {
+		return e
+	}
+	e.buf = trs.AppendTime(trs.AppendKey(e.buf, key), t, format)
 	return e
 }
 

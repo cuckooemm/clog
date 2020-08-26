@@ -18,7 +18,7 @@ func main() {
 		gid := i
 		go func() {
 			for j := 0; j < 1000; j++ {
-				clog.Info().Caller().Int("goroutine id", gid).Int("idx", j).Str("mes", "suibian").Done()
+				clog.Info().Caller().Int("goroutine id", gid).Int("idx", j).Str("mes", "suibian").Cease()
 			}
 			wg.Done()
 		}()

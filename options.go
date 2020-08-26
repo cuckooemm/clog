@@ -23,6 +23,11 @@ func (o *options) WithHook(hook ...Hook) *options {
 	return o
 }
 
+func (o *options) WithPeeHook(hook ...Hook) *options {
+	o.preHooks = append(o.hooks, hook...)
+	return o
+}
+
 func (o *options) WithWriter(w io.Writer) *options {
 	if w == nil {
 		w = ioutil.Discard
