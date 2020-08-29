@@ -638,7 +638,7 @@ func (e *Event) TimeDur(key string, d time.Duration) *Event {
 	if e == nil {
 		return e
 	}
-	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d, durationFieldUnit, durationFieldInteger)
+	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d)
 	return e
 }
 
@@ -649,7 +649,7 @@ func (e *Event) TimeDurs(key string, d []time.Duration) *Event {
 	if e == nil {
 		return e
 	}
-	e.buf = trs.AppendDurations(trs.AppendKey(e.buf, key), d, durationFieldUnit, durationFieldInteger)
+	e.buf = trs.AppendDurations(trs.AppendKey(e.buf, key), d)
 	return e
 }
 
@@ -664,7 +664,7 @@ func (e *Event) TimeDiff(key string, t time.Time, start time.Time) *Event {
 	if t.After(start) {
 		d = t.Sub(start)
 	}
-	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d, durationFieldUnit, durationFieldInteger)
+	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d)
 	return e
 }
 

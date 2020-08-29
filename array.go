@@ -195,7 +195,7 @@ func (a *Array) Time(t time.Time) *Array {
 
 // Dur append append d to the array.
 func (a *Array) Dur(d time.Duration) *Array {
-	a.buf = trs.AppendDuration(trs.AppendArrayDelim(a.buf), d, durationFieldUnit, durationFieldInteger)
+	a.buf = trs.AppendDuration(trs.AppendArrayDelim(a.buf), d)
 	return a
 }
 

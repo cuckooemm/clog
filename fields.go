@@ -108,7 +108,7 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 		case time.Time:
 			dst = trs.AppendTime(dst, val, timeLayoutFormat)
 		case time.Duration:
-			dst = trs.AppendDuration(dst, val, durationFieldUnit, durationFieldInteger)
+			dst = trs.AppendDuration(dst, val)
 		case *string:
 			if val != nil {
 				dst = trs.AppendString(dst, *val)
@@ -201,7 +201,7 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 			}
 		case *time.Duration:
 			if val != nil {
-				dst = trs.AppendDuration(dst, *val, durationFieldUnit, durationFieldInteger)
+				dst = trs.AppendDuration(dst, *val)
 			} else {
 				dst = trs.AppendNil(dst)
 			}
@@ -236,7 +236,7 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 		case []time.Time:
 			dst = trs.AppendTimes(dst, val, timeLayoutFormat)
 		case []time.Duration:
-			dst = trs.AppendDurations(dst, val, durationFieldUnit, durationFieldInteger)
+			dst = trs.AppendDurations(dst, val)
 		case nil:
 			dst = trs.AppendNil(dst)
 		case net.IP:

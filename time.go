@@ -27,26 +27,24 @@ func (s transform) AppendTime(dst []byte, t time.Time, format string) []byte {
 
 // AppendDuration formats the input duration with the given unit & format
 // and appends the encoded string to the input byte slice.
-func (s transform) AppendDuration(dst []byte, d time.Duration, unit time.Duration, useInt bool) []byte {
-	// TODO time.duration 格式
-	//s.AppendString(dst, d.String())
-	if useInt {
-		return strconv.AppendInt(dst, int64(d/unit), 10)
+func (s transform) AppendDuration(dst []byte, d time.Duration) []byte {
+	if durationFieldInteger {
+		return strconv.AppendInt(dst, int64(d/durationFieldUnit), 10)
 	}
-	return s.AppendFloat64(dst, float64(d)/float64(unit))
+	return s.AppendFloat64(dst, float64(d)/float64(durationFieldUnit))
 }
 
 // AppendDurations formats the input durations with the given unit & format
 // and appends the encoded string list to the input byte slice.
-func (s transform) AppendDurations(dst []byte, vals []time.Duration, unit time.Duration, useInt bool) []byte {
+func (s transform) AppendDurations(dst []byte, vals []time.Duration) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
 	}
 	dst = append(dst, '[')
-	dst = s.AppendDuration(dst, vals[0], unit, useInt)
+	dst = s.AppendDuration(dst, vals[0])
 	if len(vals) > 1 {
 		for _, d := range vals[1:] {
-			dst = s.AppendDuration(append(dst, ','), d, unit, useInt)
+			dst = s.AppendDuration(append(dst, ','), d)
 		}
 	}
 	dst = append(dst, ']')
