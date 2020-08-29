@@ -1,4 +1,4 @@
-package writer
+package storage
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ var (
 	currentTime = time.Now
 )
 
-type FileWrite struct {
+type rotate struct {
 	path       string
 	dirPath    string
 	name       string
@@ -43,8 +43,8 @@ type FileWrite struct {
 	startMill  sync.Once
 }
 
-func newFileWrite(path string, size, line, day, backups int, compress bool) *FileWrite {
-	var fw = new(FileWrite)
+func newFileWrite(path string, size, line, day, backups int, compress bool) *rotate {
+	var fw = new(rotate)
 	fw.path = path
 	fw.dirPath = filepath.Dir(path)
 	if err := os.MkdirAll(fw.dirPath, os.ModeDir); err != nil {
@@ -75,11 +75,12 @@ func newFileWrite(path string, size, line, day, backups int, compress bool) *Fil
 	return fw
 }
 
-func (fw *FileWrite) WriteLevel(level clog.Level, p []byte) (n int, err error) {
+func (fw *rotate) WriteLevel(level clog.Level, p []byte) (n int, err error) {
+
 	return fw.Write(p)
 }
 
-func (fw *FileWrite) Write(p []byte) (n int, err error) {
+func (fw *rotate) Write(p []byte) (n int, err error) {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
 	if len(p) > fw.lastSize {
@@ -98,7 +99,7 @@ func (fw *FileWrite) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
-func (fw *FileWrite) firstOpenExistOrNew() error {
+func (fw *rotate) firstOpenExistOrNew() error {
 	var (
 		info os.FileInfo
 		err  error
@@ -134,7 +135,7 @@ func (fw *FileWrite) firstOpenExistOrNew() error {
 	return nil
 }
 
-func (fw *FileWrite) rotate() error {
+func (fw *rotate) rotate() error {
 	if err := fw.openNew(); err != nil {
 		return err
 	}
@@ -142,20 +143,20 @@ func (fw *FileWrite) rotate() error {
 	return nil
 }
 
-func (fw *FileWrite) mill() {
+func (fw *rotate) mill() {
 	select {
 	case fw.millCh <- struct{}{}:
 	default:
 	}
 }
 
-func (fw *FileWrite) millRun() {
+func (fw *rotate) millRun() {
 	for range fw.millCh {
 		fw.millRunOnce()
 	}
 }
 
-func (fw *FileWrite) millRunOnce() {
+func (fw *rotate) millRunOnce() {
 	files, err := fw.oldLogFiles()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "clog: get old log file err %s\n", err.Error())
@@ -219,7 +220,7 @@ func (fw *FileWrite) millRunOnce() {
 	return
 }
 
-func (fw *FileWrite) oldLogFiles() ([]logInfo, error) {
+func (fw *rotate) oldLogFiles() ([]logInfo, error) {
 	files, err := ioutil.ReadDir(fw.dirPath)
 
 	if err != nil {
@@ -248,7 +249,7 @@ func (fw *FileWrite) oldLogFiles() ([]logInfo, error) {
 
 // openNew opens a new log file for writing, moving any old log file out of the
 // way.  This methods assumes the file has already been closed.
-func (fw *FileWrite) openNew() error {
+func (fw *rotate) openNew() error {
 	mode := os.FileMode(0600)
 	info, err := os.Stat(fw.path)
 	if fw.file != nil {
@@ -275,13 +276,13 @@ func (fw *FileWrite) openNew() error {
 	return nil
 }
 
-func (fw *FileWrite) prefixAndExt() (prefix, ext string) {
+func (fw *rotate) prefixAndExt() (prefix, ext string) {
 	ext = filepath.Ext(fw.name)
 	prefix = fw.name[:len(fw.name)-len(ext)]
 	return prefix + "-", ext
 }
 
-func (fw *FileWrite) timeFromName(filename, prefix, ext string) (time.Time, error) {
+func (fw *rotate) timeFromName(filename, prefix, ext string) (time.Time, error) {
 	if !strings.HasPrefix(filename, prefix) {
 		return time.Time{}, errors.New("mismatched prefix")
 	}
@@ -295,7 +296,7 @@ func (fw *FileWrite) timeFromName(filename, prefix, ext string) (time.Time, erro
 // backupName creates a new filename from the given name, inserting a timestamp
 // between the filename and the extension, using the local time if requested
 // (otherwise UTC).
-func (fw *FileWrite) backupName() string {
+func (fw *rotate) backupName() string {
 	prefix, ext := fw.prefixAndExt()
 	timestamp := currentTime().Format(backupTimeFormat)
 	return filepath.Join(fw.dirPath, fmt.Sprintf("%s%s%s", prefix, timestamp, ext))

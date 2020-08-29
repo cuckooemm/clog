@@ -2,15 +2,15 @@ package main
 
 import (
 	"github.com/cuckooemm/clog"
-	"github.com/cuckooemm/clog/writer"
+	"github.com/cuckooemm/clog/storage"
 	"sync"
 )
 
 func main() {
 	//clog.SetGlobalLevel()
 	path := "./log/api.log"
-	write := writer.NewWrite(path).WithBackups(100).WithCompress().WithMaxAge(0).WithMaxSize(writer.MB * 10).Done()
-	clog.NewOption().WithLogLevel(clog.DebugLevel).WithTimestamp().WithWriter(write).Default()
+	s := storage.Opt.WithFile(path).Backups(100).Compress().SaveTime(10).MaxSize(10).Done()
+	clog.NewOption().WithLogLevel(clog.DebugLevel).WithTimestamp().WithWriter(s).Default()
 	clog.Set.SetTimeFormat(clog.TimeFormatUnixMicro).SetCallerSkipFrameCount(2)
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 100; i++ {

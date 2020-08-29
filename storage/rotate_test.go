@@ -1,4 +1,4 @@
-package writer
+package storage
 
 import (
 	"sync"
@@ -7,14 +7,13 @@ import (
 
 func TestFileWrite_Write(t *testing.T) {
 	var path = "./log/test.log"
-	write := NewWrite(path).WithBackups(5).WithCompress().WithMaxAge(0).WithMaxSize(MB * 5).Done()
-
+	storage := Opt.WithFile(path).Backups(5).Compress().MaxSize(10).SaveTime(30).Done()
 	wg := &sync.WaitGroup{}
 	for gi := 0; gi < 100; gi++ {
 		wg.Add(1)
 		go func() {
 			for i := 0; i < 1000; i++ {
-				if _, err := write.Write([]byte("test data test data test data test data test data test data \n")); err != nil {
+				if _, err := storage.Write([]byte("test data test data test data test data test data test data \n")); err != nil {
 					t.Error(err)
 				} else {
 					//t.Logf("write len %d",n)
