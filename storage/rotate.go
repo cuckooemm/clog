@@ -47,7 +47,7 @@ func newFileWrite(path string, size, line, day, backups int, compress bool) *rot
 	var fw = new(rotate)
 	fw.path = path
 	fw.dirPath = filepath.Dir(path)
-	if err := os.MkdirAll(fw.dirPath, os.ModeDir); err != nil {
+	if err := os.MkdirAll(fw.dirPath, 0755); err != nil {
 		panic(err)
 	}
 	fw.name = filepath.Base(path)

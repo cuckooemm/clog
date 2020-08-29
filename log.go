@@ -3,7 +3,6 @@ package clog
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 )
@@ -60,25 +59,6 @@ func ParseLevel(levelStr string) (Level, error) {
 	return NoLevel, fmt.Errorf("unknown Level String: '%s', defaulting to NoLevel", levelStr)
 }
 
-func NewOption() *options {
-	return &options{}
-}
-func New(w io.Writer) Logger {
-	if w == nil {
-		w = ioutil.Discard
-	}
-	lw, ok := w.(LevelWriter)
-	if !ok {
-		lw = levelWriterAdapter{w}
-	}
-	return Logger{w: lw, level: TraceLevel}
-}
-
-// Nop returns a disabled logger for which all operation are no-op.
-func Nop() Logger {
-	return New(nil).Level(Disabled)
-}
-
 // Output duplicates the current logger and sets w as its output.
 func (l *Logger) output(w io.Writer) {
 	lw, ok := w.(LevelWriter)
@@ -86,12 +66,6 @@ func (l *Logger) output(w io.Writer) {
 		lw = levelWriterAdapter{w}
 	}
 	l.w = lw
-}
-
-// Level creates a child logger with the minimum accepted level set to level.
-func (l Logger) Level(lvl Level) Logger {
-	l.level = lvl
-	return l
 }
 
 // GetLevel returns the current Level of l.
@@ -237,6 +211,9 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 		return nil
 	}
 	e := newEvent(l.w, level)
+	if l.context != nil && len(l.context) > 1 {
+		e.buf = trs.AppendObjectData(e.buf, l.context)
+	}
 	for _, hook := range l.preHook {
 		hook.Run(e, level, "")
 	}
@@ -244,9 +221,6 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 	e.ch = l.hooks
 	if level != NoLevel {
 		e.Str(levelFieldName, levelFieldMarshalFunc(level))
-	}
-	if l.context != nil && len(l.context) > 1 {
-		e.buf = trs.AppendObjectData(e.buf, l.context)
 	}
 	return e
 }

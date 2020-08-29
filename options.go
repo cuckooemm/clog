@@ -6,7 +6,16 @@ import (
 	"time"
 )
 
-var Set = setting{}
+var (
+	Set = setting{}
+)
+
+type setting struct{}
+type field struct{}
+
+func NewOption() *options {
+	return &options{}
+}
 
 type options struct {
 	w     LevelWriter
@@ -23,7 +32,7 @@ func (o *options) WithHook(hook ...Hook) *options {
 	return o
 }
 
-func (o *options) WithPeeHook(hook ...Hook) *options {
+func (o *options) WithPreHook(hook ...Hook) *options {
 	o.preHooks = append(o.hooks, hook...)
 	return o
 }
@@ -45,8 +54,8 @@ func (o *options) WithLogLevel(lvl Level) *options {
 	return o
 }
 
-func (o *options) WithPrefix(prefix string) *options {
-	o.prefix = []byte(prefix)
+func (o *options) WithPrefix(key, value string) *options {
+	o.prefix = trs.AppendString(append(trs.AppendString(o.prefix, key), ':'), value)
 	return o
 }
 
@@ -77,9 +86,6 @@ func (o *options) Logger() Logger {
 	return log
 }
 
-type setting struct{}
-type field struct{}
-
 func (s setting) SetTimeFormat(layout string) setting {
 	timeLayoutFormat = layout
 	return s
@@ -109,8 +115,8 @@ func (s setting) SetBaseTimeDurationUnit(d time.Duration) setting {
 	durationFieldUnit = d
 	return s
 }
-func (s setting) SetBaseTimeDurationInteger(b bool) setting {
-	durationFieldInteger = b
+func (s setting) SetBaseTimeDurationInteger() setting {
+	durationFieldInteger = true
 	return s
 }
 func (s setting) SetCallMarshalFunc(f func(file string, line int) string) setting {

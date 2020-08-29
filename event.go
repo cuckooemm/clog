@@ -631,10 +631,10 @@ func (e *Event) Times(key string, t []time.Time) *Event {
 	return e
 }
 
-// Dur adds the field key with duration d stored as clog.DurationFieldUnit.
+// TimeDur adds the field key with duration d stored as clog.DurationFieldUnit.
 // If clog.DurationFieldInteger is true, durations are rendered as integer
 // instead of float.
-func (e *Event) Dur(key string, d time.Duration) *Event {
+func (e *Event) TimeDur(key string, d time.Duration) *Event {
 	if e == nil {
 		return e
 	}
@@ -642,10 +642,10 @@ func (e *Event) Dur(key string, d time.Duration) *Event {
 	return e
 }
 
-// Durs adds the field key with duration d stored as clog.DurationFieldUnit.
+// TimeDurs adds the field key with duration d stored as clog.DurationFieldUnit.
 // If clog.DurationFieldInteger is true, durations are rendered as integer
 // instead of float.
-func (e *Event) Durs(key string, d []time.Duration) *Event {
+func (e *Event) TimeDurs(key string, d []time.Duration) *Event {
 	if e == nil {
 		return e
 	}

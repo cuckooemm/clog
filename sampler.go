@@ -80,3 +80,7 @@ func Print(v ...interface{}) {
 func Printf(format string, v ...interface{}) {
 	clog.Printf(format, v...)
 }
+
+func GetLevel() Level {
+	return clog.level
+}

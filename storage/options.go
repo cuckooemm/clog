@@ -20,8 +20,8 @@ func (o *option) WithFile(path string) *storageFile {
 }
 
 // MaxSize Mb
-func (o *storageFile) MaxSize(m int) *storageFile {
-	o.size = m * (1 << 20)
+func (o *storageFile) MaxSize(M int) *storageFile {
+	o.size = M * (1 << 20)
 	return o
 }
 
