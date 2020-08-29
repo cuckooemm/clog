@@ -78,11 +78,11 @@ func (o *options) Default() {
 
 func (o *options) Logger() Logger {
 	log := Logger{}
-	log.hooks = append(clog.hooks, o.hooks...)
-	clog.preHook = append(clog.preHook, o.preHooks...)
-	clog.w = o.w
-	clog.level = o.level
-	clog.context = append(clog.context, o.prefix...)
+	log.hooks = append(log.hooks, o.hooks...)
+	log.preHook = append(log.preHook, o.preHooks...)
+	log.w = o.w
+	log.level = o.level
+	log.context = append(log.context, o.prefix...)
 	return log
 }
 

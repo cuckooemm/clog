@@ -16,7 +16,7 @@ import (
 func TestLogger(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out)
+		log := NewOption().WithWriter(out).Logger()
 		log.Log().Msg("")
 		if got, want := out.String(), "{}\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -24,7 +24,7 @@ func TestLogger(t *testing.T) {
 	})
 	t.Run("one-field", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out)
+		log := NewOption().WithWriter(out).Logger()
 		log.Log().Str("foo", "bar").Msg("")
 		if got, want := out.String(), `{"foo":"bar"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -33,7 +33,7 @@ func TestLogger(t *testing.T) {
 
 	t.Run("two-field", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out)
+		log := NewOption().WithWriter(out).Logger()
 		log.Log().
 			Str("foo", "bar").
 			Int("n", 123).
@@ -47,7 +47,7 @@ func TestLogger(t *testing.T) {
 func TestLogger_Info(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out)
+		log := NewOption().WithWriter(out).Logger()
 		log.Info().Msg("")
 		if got, want := out.String(), `{"level":"info"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -55,7 +55,7 @@ func TestLogger_Info(t *testing.T) {
 	})
 	t.Run("one-field", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out)
+		log := NewOption().WithWriter(out).Logger()
 		log.Info().Str("foo", "bar").Msg("")
 		if got, want := out.String(), `{"level":"info","foo":"bar"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -64,7 +64,7 @@ func TestLogger_Info(t *testing.T) {
 
 	t.Run("two-field", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out)
+		log := NewOption().WithWriter(out).Logger()
 		log.Info().
 			Str("foo", "bar").
 			Int("n", 123).
@@ -77,7 +77,7 @@ func TestLogger_Info(t *testing.T) {
 
 func TestFieldsMap(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	log.Log().Fields(map[string]interface{}{
 		"nil":     nil,
 		"string":  "foo",
@@ -108,7 +108,7 @@ func TestFieldsMap(t *testing.T) {
 
 func TestFieldsMapPnt(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	log.Log().Fields(map[string]interface{}{
 		"string":  new(string),
 		"bool":    new(bool),
@@ -152,7 +152,7 @@ func TestFieldsMapNilPnt(t *testing.T) {
 		timePnt    *time.Time
 	)
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	fields := map[string]interface{}{
 		"string":  stringPnt,
 		"bool":    boolPnt,
@@ -180,7 +180,7 @@ func TestFieldsMapNilPnt(t *testing.T) {
 
 func TestFields(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	now := time.Now()
 	_, file, line, _ := runtime.Caller(0)
 	caller := fmt.Sprintf("%s:%d", file, line+3)
@@ -211,7 +211,7 @@ func TestFields(t *testing.T) {
 		IPPrefix("Prefix", net.IPNet{IP: net.IP{192, 168, 0, 100}, Mask: net.CIDRMask(24, 32)}).
 		Float32("float32", 11.1234).
 		Float64("float64", 12.321321321).
-		Dur("dur", 1*time.Second).
+		TimeDur("dur", 1*time.Second).
 		Time("time", time.Time{}).
 		TimeDiff("diff", now, now.Add(-10*time.Second)).
 		Msg("")
@@ -222,7 +222,7 @@ func TestFields(t *testing.T) {
 
 func TestFieldsArrayEmpty(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	log.Log().
 		Strs("string", []string{}).
 		Errs("err", []error{}).
@@ -239,7 +239,7 @@ func TestFieldsArrayEmpty(t *testing.T) {
 		Uints64("uint64", []uint64{}).
 		Floats32("float32", []float32{}).
 		Floats64("float64", []float64{}).
-		Durs("dur", []time.Duration{}).
+		TimeDurs("dur", []time.Duration{}).
 		Times("time", []time.Time{}).
 		Msg("")
 	if got, want := out.String(), `{"string":[],"err":[],"bool":[],"int":[],"int8":[],"int16":[],"int32":[],"int64":[],"uint":[],"uint8":[],"uint16":[],"uint32":[],"uint64":[],"float32":[],"float64":[],"dur":[],"time":[]}`+"\n"; got != want {
@@ -249,7 +249,7 @@ func TestFieldsArrayEmpty(t *testing.T) {
 
 func TestFieldsArraySingleElement(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	log.Log().
 		Strs("string", []string{"foo"}).
 		Errs("err", []error{errors.New("some error")}).
@@ -266,7 +266,7 @@ func TestFieldsArraySingleElement(t *testing.T) {
 		Uints64("uint64", []uint64{10}).
 		Floats32("float32", []float32{11}).
 		Floats64("float64", []float64{12}).
-		Durs("dur", []time.Duration{1 * time.Second}).
+		TimeDurs("dur", []time.Duration{1 * time.Second}).
 		Times("time", []time.Time{time.Time{}}).
 		Msg("")
 	if got, want := out.String(), `{"string":["foo"],"err":["some error"],"bool":[true],"int":[1],"int8":[2],"int16":[3],"int32":[4],"int64":[5],"uint":[6],"uint8":[7],"uint16":[8],"uint32":[9],"uint64":[10],"float32":[11],"float64":[12],"dur":[1000],"time":["0001-01-01T00:00:00Z"]}`+"\n"; got != want {
@@ -276,7 +276,7 @@ func TestFieldsArraySingleElement(t *testing.T) {
 
 func TestFieldsArrayMultipleElement(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	log.Log().
 		Strs("string", []string{"foo", "bar"}).
 		Errs("err", []error{errors.New("some error"), nil}).
@@ -293,7 +293,7 @@ func TestFieldsArrayMultipleElement(t *testing.T) {
 		Uints64("uint64", []uint64{10, 0}).
 		Floats32("float32", []float32{11, 0}).
 		Floats64("float64", []float64{12, 0}).
-		Durs("dur", []time.Duration{1 * time.Second, 0}).
+		TimeDurs("dur", []time.Duration{1 * time.Second, 0}).
 		Times("time", []time.Time{time.Time{}, time.Time{}}).
 		Msg("")
 	if got, want := out.String(), `{"string":["foo","bar"],"err":["some error",null],"bool":[true,false],"int":[1,0],"int8":[2,0],"int16":[3,0],"int32":[4,0],"int64":[5,0],"uint":[6,0],"uint8":[7,0],"uint16":[8,0],"uint32":[9,0],"uint64":[10,0],"float32":[11,0],"float64":[12,0],"dur":[1000,0],"time":["0001-01-01T00:00:00Z","0001-01-01T00:00:00Z"]}`+"\n"; got != want {
@@ -303,7 +303,7 @@ func TestFieldsArrayMultipleElement(t *testing.T) {
 
 func TestFieldsDisabled(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out).Level(InfoLevel)
+	log := NewOption().WithLogLevel(InfoLevel).WithWriter(out).Logger()
 	now := time.Now()
 	log.Debug().
 		Str("string", "foo").
@@ -324,7 +324,7 @@ func TestFieldsDisabled(t *testing.T) {
 		Uint64("uint64", 10).
 		Float32("float32", 11).
 		Float64("float64", 12).
-		Dur("dur", 1*time.Second).
+		TimeDur("dur", 1*time.Second).
 		Time("time", time.Time{}).
 		TimeDiff("diff", now, now.Add(-10*time.Second)).
 		Msg("")
@@ -335,7 +335,7 @@ func TestFieldsDisabled(t *testing.T) {
 
 func TestMsgf(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	log.Log().Msgf("one %s %.1f %d %v", "two", 3.4, 5, errors.New("six"))
 	if got, want := out.String(), `{"message":"one two 3.4 5 six"}`+"\n"; got != want {
 		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -354,7 +354,7 @@ func TestMsgf(t *testing.T) {
 func TestLevel(t *testing.T) {
 	t.Run("Disabled", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out).Level(Disabled)
+		log := NewOption().WithLogLevel(Disabled).WithWriter(out).Logger()
 		log.Info().Msg("test")
 		if got, want := out.String(), ""; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -363,7 +363,7 @@ func TestLevel(t *testing.T) {
 
 	t.Run("NoLevel/Disabled", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out).Level(Disabled)
+		log := NewOption().WithLogLevel(Disabled).WithWriter(out).Logger()
 		log.Log().Msg("test")
 		if got, want := out.String(), ""; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -372,7 +372,7 @@ func TestLevel(t *testing.T) {
 
 	t.Run("NoLevel/Info", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out).Level(InfoLevel)
+		log := NewOption().WithLogLevel(InfoLevel).WithWriter(out).Logger()
 		log.Log().Msg("test")
 		if got, want := out.String(), `{"message":"test"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -381,7 +381,7 @@ func TestLevel(t *testing.T) {
 
 	t.Run("NoLevel/Panic", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out).Level(PanicLevel)
+		log := NewOption().WithLogLevel(PanicLevel).WithWriter(out).Logger()
 		log.Log().Msg("test")
 		if got, want := out.String(), `{"message":"test"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -390,7 +390,7 @@ func TestLevel(t *testing.T) {
 
 	t.Run("NoLevel/WithLevel", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out).Level(InfoLevel)
+		log := NewOption().WithLogLevel(InfoLevel).WithWriter(out).Logger()
 		log.WithLevel(NoLevel).Msg("test")
 		if got, want := out.String(), `{"message":"test"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -399,7 +399,7 @@ func TestLevel(t *testing.T) {
 
 	t.Run("Info", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		log := New(out).Level(InfoLevel)
+		log := NewOption().WithLogLevel(InfoLevel).WithWriter(out).Logger()
 		log.Info().Msg("test")
 		if got, want := out.String(), `{"level":"info","message":"test"}`+"\n"; got != want {
 			t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -419,7 +419,8 @@ func TestGetLevel(t *testing.T) {
 		Disabled,
 	}
 	for _, level := range levels {
-		if got, want := New(nil).Level(level).GetLevel(), level; got != want {
+		log := NewOption().WithWriter(nil).WithLogLevel(level).Logger()
+		if got, want := log.GetLevel(), level; got != want {
 			t.Errorf("GetLevel() = %v, want: %v", got, want)
 		}
 	}
@@ -439,7 +440,7 @@ func TestGetLevel(t *testing.T) {
 
 func TestDiscard(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 	log.Log().Discard().Str("a", "b").Msgf("one %s %.1f %d %v", "two", 3.4, 5, errors.New("six"))
 	if got, want := out.String(), ""; got != want {
 		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
@@ -479,7 +480,7 @@ func TestLevelWriter(t *testing.T) {
 		}{},
 	}
 	SetGlobalLevel(TraceLevel)
-	log := New(lw)
+	log := NewOption().WithLogLevel(TraceLevel).WithWriter(lw).Logger()
 	log.Trace().Msg("0")
 	log.Debug().Msg("1")
 	log.Info().Msg("2")
@@ -515,93 +516,6 @@ func TestLevelWriter(t *testing.T) {
 	}
 }
 
-//func TestContextTimestamp(t *testing.T) {
-//	TimestampFunc = func() time.Time {
-//		return time.Date(2001, time.February, 3, 4, 5, 6, 7, time.UTC)
-//	}
-//	defer func() {
-//		TimestampFunc = time.Now
-//	}()
-//	out := &bytes.Buffer{}
-//	log := New(out).With().Timestamp().Str("foo", "bar").Logger()
-//	log.Log().Msg("hello world")
-//
-//	if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","time":"2001-02-03T04:05:06Z","message":"hello world"}`+"\n"; got != want {
-//		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
-//	}
-//}
-
-//func TestEventTimestamp(t *testing.T) {
-//	TimestampFunc = func() time.Time {
-//		return time.Date(2001, time.February, 3, 4, 5, 6, 7, time.UTC)
-//	}
-//	defer func() {
-//		TimestampFunc = time.Now
-//	}()
-//	out := &bytes.Buffer{}
-//	log := New(out).With().Str("foo", "bar").Logger()
-//	log.Log().Timestamp().Msg("hello world")
-//
-//	if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","time":"2001-02-03T04:05:06Z","message":"hello world"}`+"\n"; got != want {
-//		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
-//	}
-//}
-
-//func TestOutputWithoutTimestamp(t *testing.T) {
-//	ignoredOut := &bytes.Buffer{}
-//	out := &bytes.Buffer{}
-//	log := New(ignoredOut).Output(out).With().Str("foo", "bar").Logger()
-//	log.Log().Msg("hello world")
-//
-//	if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","message":"hello world"}`+"\n"; got != want {
-//		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
-//	}
-//}
-//func TestOutputWithTimestamp(t *testing.T) {
-//	TimestampFunc = func() time.Time {
-//		return time.Date(2001, time.February, 3, 4, 5, 6, 7, time.UTC)
-//	}
-//	defer func() {
-//		TimestampFunc = time.Now
-//	}()
-//	ignoredOut := &bytes.Buffer{}
-//	out := &bytes.Buffer{}
-//	log := New(ignoredOut).Output(out).With().Timestamp().Str("foo", "bar").Logger()
-//	log.Log().Msg("hello world")
-//
-//	if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","time":"2001-02-03T04:05:06Z","message":"hello world"}`+"\n"; got != want {
-//		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
-//	}
-//}
-
-//func TestOutputWithoutTimestamp(t *testing.T) {
-//	ignoredOut := &bytes.Buffer{}
-//	out := &bytes.Buffer{}
-//	log := New(ignoredOut).Output(out).With().Str("foo", "bar").Logger()
-//	log.Log().Msg("hello world")
-//
-//	if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","message":"hello world"}`+"\n"; got != want {
-//		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
-//	}
-//}
-
-//func TestOutputWithTimestamp(t *testing.T) {
-//	TimestampFunc = func() time.Time {
-//		return time.Date(2001, time.February, 3, 4, 5, 6, 7, time.UTC)
-//	}
-//	defer func() {
-//		TimestampFunc = time.Now
-//	}()
-//	ignoredOut := &bytes.Buffer{}
-//	out := &bytes.Buffer{}
-//	log := New(ignoredOut).Output(out).With().Timestamp().Str("foo", "bar").Logger()
-//	log.Log().Msg("hello world")
-//
-//	if got, want := decodeIfBinaryToString(out.Bytes()), `{"foo":"bar","time":"2001-02-03T04:05:06Z","message":"hello world"}`+"\n"; got != want {
-//		t.Errorf("invalid log output:\ngot:  %v\nwant: %v", got, want)
-//	}
-//}
-
 type loggableError struct {
 	error
 }
@@ -611,7 +525,7 @@ func (l loggableError) MarshalObject(e *Event) {
 }
 func TestErrorMarshalFunc(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 
 	// test default behaviour
 	log.Log().Err(errors.New("err")).Msg("msg")
@@ -661,7 +575,7 @@ func TestErrorMarshalFunc(t *testing.T) {
 
 func TestCallerMarshalFunc(t *testing.T) {
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 
 	// test default behaviour this is really brittle due to the line numbers
 	// actually mattering for validation
@@ -701,7 +615,7 @@ func TestLevelFieldMarshalFunc(t *testing.T) {
 		levelFieldMarshalFunc = origLevelFieldMarshalFunc
 	}()
 	out := &bytes.Buffer{}
-	log := New(out)
+	log := NewOption().WithWriter(out).Logger()
 
 	log.Debug().Msg("test")
 	if got, want := out.String(), `{"level":"DEBUG","message":"test"}`+"\n"; got != want {
@@ -742,7 +656,7 @@ func TestErrorHandler(t *testing.T) {
 	errorHandler = func(err error) {
 		got = err
 	}
-	log := New(errWriter{want})
+	log := NewOption().WithWriter(errWriter{want}).Logger()
 	log.Log().Msg("test")
 	if got != want {
 		t.Errorf("ErrorHandler err = %#v, want %#v", got, want)
