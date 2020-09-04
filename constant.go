@@ -1,7 +1,6 @@
 package clog
 
 import (
-	"os"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -38,14 +37,12 @@ const (
 )
 
 func init() {
-	curPath, _ := os.Getwd()
-	curPathIdx = len(curPath)
+	*gLevel = -1
 }
 
 var (
 	// 全局日志等级
-	gLevel     = new(int32)
-	curPathIdx int
+	gLevel = new(int32)
 	// TimeFieldFormat defines the time format of the Time field type. If set to
 	// TimeFormatUnix, TimeFormatUnixMs or TimeFormatUnixMicro, the time is formatted as an UNIX
 	// timestamp as integer.

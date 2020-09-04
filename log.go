@@ -24,7 +24,7 @@ func (l Level) String() string {
 	case PanicLevel:
 		return "panic"
 	case NoLevel:
-		return ""
+		return "nil"
 	}
 	return ""
 }
