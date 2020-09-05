@@ -5,12 +5,13 @@ type option struct{}
 var Opt option
 
 type storageFile struct {
-	path     string
-	size     int
-	line     int
-	day      int
-	total    int
-	compress bool
+	path        string
+	size        int
+	line        int
+	day         int
+	total       int
+	compress    bool
+	compressDay int
 }
 
 func (o *option) WithFile(path string) *storageFile {
@@ -38,8 +39,12 @@ func (o *storageFile) SaveTime(day int) *storageFile {
 }
 
 // 开启压缩
-func (o *storageFile) Compress() *storageFile {
-	o.compress = true
+// day 天后日志开始压缩
+func (o *storageFile) Compress(day int) *storageFile {
+	if day > 0 {
+		o.compress = true
+		o.compressDay = day
+	}
 	return o
 }
 
@@ -50,5 +55,5 @@ func (o *storageFile) Backups(total int) *storageFile {
 }
 
 func (o *storageFile) Done() *rotate {
-	return newFileWrite(o.path, o.size, o.line, o.day, o.total, o.compress)
+	return newFileWrite(o.path, o.size, o.line, o.day, o.total, o.compressDay, o.compress)
 }

@@ -27,23 +27,24 @@ var (
 )
 
 type rotate struct {
-	path       string
-	dirPath    string
-	name       string
-	maxSize    int  // 文件最大大小
-	lastSize   int  // 剩余可写空间
-	maxLine    int  // 文件最大可写行
-	lastLine   int  // 文件剩余可写行
-	maxDay     int  // 备份文件保存时间
-	maxBackups int  // 备份文件数量
-	compress   bool // 备份文件是否压缩
-	file       *os.File
-	mu         sync.Mutex
-	millCh     chan struct{}
-	startMill  sync.Once
+	path          string
+	dirPath       string
+	name          string
+	maxSize       int  // 文件最大大小
+	lastSize      int  // 剩余可写空间
+	maxLine       int  // 文件最大可写行
+	lastLine      int  // 文件剩余可写行
+	maxDay        int  // 备份文件保存时间
+	maxBackups    int  // 备份文件数量
+	compress      bool // 备份文件是否压缩
+	compressAfter int  // 几天后的日志进行压缩
+	file          *os.File
+	mu            sync.Mutex
+	millCh        chan struct{}
+	startMill     sync.Once
 }
 
-func newFileWrite(path string, size, line, day, backups int, compress bool) *rotate {
+func newFileWrite(path string, size, line, day, backups, compressAfter int, compress bool) *rotate {
 	var fw = new(rotate)
 	fw.path = path
 	fw.dirPath = filepath.Dir(path)
@@ -57,6 +58,7 @@ func newFileWrite(path string, size, line, day, backups int, compress bool) *rot
 	if fw.maxSize <= 0 {
 		fw.maxSize = math.MaxInt64
 	}
+	fw.compressAfter = compressAfter
 	fw.maxLine = line
 	if fw.maxLine <= 0 {
 		fw.maxLine = math.MaxInt64
@@ -198,7 +200,7 @@ func (fw *rotate) millRunOnce() {
 
 	// 压缩7天后的文件
 	if fw.compress {
-		compressTime := currentTime().AddDate(0, 0, -7)
+		compressTime := currentTime().AddDate(0, 0, -fw.compressAfter)
 		for _, f := range files {
 			if !strings.HasSuffix(f.Name(), compressSuffix) && f.timestamp.Before(compressTime) {
 				compress = append(compress, f)
