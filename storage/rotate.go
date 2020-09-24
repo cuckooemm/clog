@@ -252,7 +252,7 @@ func (fw *rotate) oldLogFiles() ([]logInfo, error) {
 // openNew opens a new log file for writing, moving any old log file out of the
 // way.  This methods assumes the file has already been closed.
 func (fw *rotate) openNew() error {
-	mode := os.FileMode(0600)
+	mode := os.FileMode(0644)
 	info, err := os.Stat(fw.path)
 	if fw.file != nil {
 		if err := fw.file.Close(); err != nil {

@@ -16,7 +16,7 @@ func main() {
 
 func writeLogFile() {
 	path := "./log/api.log"
-	s := storage.Opt.WithFile(path).Backups(100).Compress().SaveTime(10).MaxSize(10).Done()
+	s := storage.Opt.WithFile(path).Backups(100).Compress(3).SaveTime(10).MaxSize(10).Done()
 	clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Default()
 	clog.Set.SetBaseTimeDurationInteger()
 
