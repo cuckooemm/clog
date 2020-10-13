@@ -18,15 +18,13 @@ import (
 )
 
 const (
-	backupTimeFormat = "2006-01-02T15-04-05.000"
+	backupTimeFormat = "20060102150405"
 	compressSuffix   = ".gz"
 )
 
-var (
-	currentTime = time.Now
-)
+var currentTime = time.Now
 
-type rotate struct {
+type Rotate struct {
 	path          string
 	dirPath       string
 	name          string
@@ -44,8 +42,8 @@ type rotate struct {
 	startMill     sync.Once
 }
 
-func newFileWrite(path string, size, line, day, backups, compressAfter int, compress bool) *rotate {
-	var fw = new(rotate)
+func newFileWrite(path string, size, line, day, backups, compressAfter int, compress bool) *Rotate {
+	fw := new(Rotate)
 	fw.path = path
 	fw.dirPath = filepath.Dir(path)
 	if err := os.MkdirAll(fw.dirPath, 0755); err != nil {
@@ -77,12 +75,12 @@ func newFileWrite(path string, size, line, day, backups, compressAfter int, comp
 	return fw
 }
 
-func (fw *rotate) WriteLevel(level clog.Level, p []byte) (n int, err error) {
+func (fw *Rotate) WriteLevel(level clog.Level, p []byte) (n int, err error) {
 
 	return fw.Write(p)
 }
 
-func (fw *rotate) Write(p []byte) (n int, err error) {
+func (fw *Rotate) Write(p []byte) (n int, err error) {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
 	if len(p) > fw.lastSize {
@@ -101,7 +99,7 @@ func (fw *rotate) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
-func (fw *rotate) firstOpenExistOrNew() error {
+func (fw *Rotate) firstOpenExistOrNew() error {
 	var (
 		info os.FileInfo
 		err  error
@@ -137,7 +135,7 @@ func (fw *rotate) firstOpenExistOrNew() error {
 	return nil
 }
 
-func (fw *rotate) rotate() error {
+func (fw *Rotate) rotate() error {
 	if err := fw.openNew(); err != nil {
 		return err
 	}
@@ -145,27 +143,28 @@ func (fw *rotate) rotate() error {
 	return nil
 }
 
-func (fw *rotate) mill() {
+func (fw *Rotate) mill() {
 	select {
 	case fw.millCh <- struct{}{}:
 	default:
 	}
 }
 
-func (fw *rotate) millRun() {
+func (fw *Rotate) millRun() {
 	for range fw.millCh {
 		fw.millRunOnce()
 	}
 }
 
-func (fw *rotate) millRunOnce() {
-	files, err := fw.oldLogFiles()
-	if err != nil {
+func (fw *Rotate) millRunOnce() {
+	var (
+		compress, remove, files []logInfo
+		err                     error
+	)
+	if files, err = fw.oldLogFiles(); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "clog: get old log file err %s\n", err.Error())
 		return
 	}
-	var compress, remove []logInfo
-
 	if fw.maxBackups > 0 && fw.maxBackups < len(files) {
 		preserved := make(map[string]struct{})
 		var remaining []logInfo
@@ -198,7 +197,7 @@ func (fw *rotate) millRunOnce() {
 		files = remaining
 	}
 
-	// 压缩7天后的文件
+	// 压缩n天后的文件
 	if fw.compress {
 		compressTime := currentTime().AddDate(0, 0, -fw.compressAfter)
 		for _, f := range files {
@@ -209,26 +208,28 @@ func (fw *rotate) millRunOnce() {
 	}
 
 	for _, f := range remove {
-		if err := os.Remove(filepath.Join(fw.dirPath, f.Name())); err != nil {
+		if err = os.Remove(filepath.Join(fw.dirPath, f.Name())); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "clog: remove old log file %s err %s\n", f.Name(), err.Error())
 		}
 	}
 	for _, f := range compress {
 		fn := filepath.Join(fw.dirPath, f.Name())
-		if err := compressLogFile(fn, fn+compressSuffix); err != nil {
+		if err = compressLogFile(fn, fn+compressSuffix); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "clog: compress log file %s err %s\n", f.Name(), err.Error())
 		}
 	}
 	return
 }
 
-func (fw *rotate) oldLogFiles() ([]logInfo, error) {
-	files, err := ioutil.ReadDir(fw.dirPath)
-
-	if err != nil {
+func (fw *Rotate) oldLogFiles() ([]logInfo, error) {
+	var (
+		files    []os.FileInfo
+		logFiles []logInfo
+		err      error
+	)
+	if files, err = ioutil.ReadDir(fw.dirPath); err != nil {
 		return nil, fmt.Errorf("can't read log file directory: %s", err)
 	}
-	var logFiles []logInfo
 	prefix, ext := fw.prefixAndExt()
 	for _, f := range files {
 		if f.IsDir() {
@@ -251,7 +252,7 @@ func (fw *rotate) oldLogFiles() ([]logInfo, error) {
 
 // openNew opens a new log file for writing, moving any old log file out of the
 // way.  This methods assumes the file has already been closed.
-func (fw *rotate) openNew() error {
+func (fw *Rotate) openNew() error {
 	mode := os.FileMode(0644)
 	info, err := os.Stat(fw.path)
 	if fw.file != nil {
@@ -278,13 +279,13 @@ func (fw *rotate) openNew() error {
 	return nil
 }
 
-func (fw *rotate) prefixAndExt() (prefix, ext string) {
+func (fw *Rotate) prefixAndExt() (prefix, ext string) {
 	ext = filepath.Ext(fw.name)
 	prefix = fw.name[:len(fw.name)-len(ext)]
 	return prefix + "-", ext
 }
 
-func (fw *rotate) timeFromName(filename, prefix, ext string) (time.Time, error) {
+func (fw *Rotate) timeFromName(filename, prefix, ext string) (time.Time, error) {
 	if !strings.HasPrefix(filename, prefix) {
 		return time.Time{}, errors.New("mismatched prefix")
 	}
@@ -298,7 +299,7 @@ func (fw *rotate) timeFromName(filename, prefix, ext string) (time.Time, error) 
 // backupName creates a new filename from the given name, inserting a timestamp
 // between the filename and the extension, using the local time if requested
 // (otherwise UTC).
-func (fw *rotate) backupName() string {
+func (fw *Rotate) backupName() string {
 	prefix, ext := fw.prefixAndExt()
 	timestamp := currentTime().Format(backupTimeFormat)
 	return filepath.Join(fw.dirPath, fmt.Sprintf("%s%s%s", prefix, timestamp, ext))
@@ -307,25 +308,21 @@ func (fw *rotate) backupName() string {
 // compressLogFile compresses the given log file, removing the
 // uncompressed log file if successful.
 func compressLogFile(src, dst string) (err error) {
-	f, err := os.Open(src)
-	if err != nil {
+	var (
+		f, gzf *os.File
+		fi     os.FileInfo
+	)
+	if f, err = os.Open(src); err != nil {
 		return fmt.Errorf("failed to open log file: %v", err)
 	}
 	defer f.Close()
 
-	fi, err := os.Stat(src)
-	if err != nil {
+	if fi, err = os.Stat(src); err != nil {
 		return fmt.Errorf("failed to stat log file: %v", err)
 	}
-
-	//if err := chown(dst, fi); err != nil {
-	//	return fmt.Errorf("failed to chown compressed log file: %v", err)
-	//}
-
 	// If this file already exists, we presume it was created by
 	// a previous attempt to compress the log file.
-	gzf, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fi.Mode())
-	if err != nil {
+	if gzf, err = os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fi.Mode()); err != nil {
 		return fmt.Errorf("failed to open compressed log file: %v", err)
 	}
 	defer gzf.Close()
@@ -339,20 +336,20 @@ func compressLogFile(src, dst string) (err error) {
 		}
 	}()
 
-	if _, err := io.Copy(gz, f); err != nil {
+	if _, err = io.Copy(gz, f); err != nil {
 		return err
 	}
-	if err := gz.Close(); err != nil {
+	if err = gz.Close(); err != nil {
 		return err
 	}
-	if err := gzf.Close(); err != nil {
+	if err = gzf.Close(); err != nil {
 		return err
 	}
 
-	if err := f.Close(); err != nil {
+	if err = f.Close(); err != nil {
 		return err
 	}
-	if err := os.Remove(src); err != nil {
+	if err = os.Remove(src); err != nil {
 		return err
 	}
 

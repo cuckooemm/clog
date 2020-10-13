@@ -54,6 +54,6 @@ func (o *storageFile) Backups(total int) *storageFile {
 	return o
 }
 
-func (o *storageFile) Done() *rotate {
+func (o *storageFile) Done() *Rotate {
 	return newFileWrite(o.path, o.size, o.line, o.day, o.total, o.compressDay, o.compress)
 }

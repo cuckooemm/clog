@@ -6,15 +6,13 @@ import (
 	"time"
 )
 
-var (
-	Set = setting{}
-)
+var Set = new(setting)
 
 type setting struct{}
 type field struct{}
 
 func NewOption() *options {
-	return &options{}
+	return new(options)
 }
 
 type options struct {
