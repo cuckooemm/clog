@@ -71,78 +71,14 @@ func (l *Logger) output(w io.Writer) {
 // SetStrPrefix set prefix string
 func (l *Logger) ResetStrPrefix(key string, val interface{}) {
 	l.preStr = nil
-	l.preStr = append(trs.AppendString(l.preStr, key), ':')
-	switch val := val.(type) {
-	case int:
-		l.preStr = trs.AppendInt(l.preStr, val)
-	case int8:
-		l.preStr = trs.AppendInt8(l.preStr, val)
-	case int16:
-		l.preStr = trs.AppendInt16(l.preStr, val)
-	case int32:
-		l.preStr = trs.AppendInt32(l.preStr, val)
-	case int64:
-		l.preStr = trs.AppendInt64(l.preStr, val)
-	case uint:
-		l.preStr = trs.AppendUint(l.preStr, val)
-	case uint16:
-		l.preStr = trs.AppendUint16(l.preStr, val)
-	case uint32:
-		l.preStr = trs.AppendUint32(l.preStr, val)
-	case uint64:
-		l.preStr = trs.AppendUint64(l.preStr, val)
-	case float32:
-		l.preStr = trs.AppendFloat32(l.preStr, val)
-	case float64:
-		l.preStr = trs.AppendFloat64(l.preStr, val)
-	case bool:
-		l.preStr = trs.AppendBool(l.preStr, val)
-	case string:
-		l.preStr = trs.AppendString(l.preStr, val)
-	case []byte:
-		l.preStr = trs.AppendBytes(l.preStr, val)
-	default:
-		l.preStr = trs.AppendInterface(l.preStr, val)
-	}
+	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
 }
 
 func (l *Logger) AppendStrPrefix(key string, val interface{}) {
 	if len(l.preStr) > 0 {
 		l.preStr = append(l.preStr, ',')
 	}
-	l.preStr = append(trs.AppendString(l.preStr, key), ':')
-	switch val := val.(type) {
-	case int:
-		l.preStr = trs.AppendInt(l.preStr, val)
-	case int8:
-		l.preStr = trs.AppendInt8(l.preStr, val)
-	case int16:
-		l.preStr = trs.AppendInt16(l.preStr, val)
-	case int32:
-		l.preStr = trs.AppendInt32(l.preStr, val)
-	case int64:
-		l.preStr = trs.AppendInt64(l.preStr, val)
-	case uint:
-		l.preStr = trs.AppendUint(l.preStr, val)
-	case uint16:
-		l.preStr = trs.AppendUint16(l.preStr, val)
-	case uint32:
-		l.preStr = trs.AppendUint32(l.preStr, val)
-	case uint64:
-		l.preStr = trs.AppendUint64(l.preStr, val)
-	case float32:
-		l.preStr = trs.AppendFloat32(l.preStr, val)
-	case float64:
-		l.preStr = trs.AppendFloat64(l.preStr, val)
-	case bool:
-		l.preStr = trs.AppendBool(l.preStr, val)
-	case string:
-		l.preStr = trs.AppendString(l.preStr, val)
-	case []byte:
-		l.preStr = trs.AppendBytes(l.preStr, val)
-	default:
-		l.preStr = trs.AppendInterface(l.preStr, val)
-	}
+	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
 }
 
 // GetLevel returns the current Level of l.
