@@ -12,10 +12,12 @@ import (
 
 func main() {
 	//changeLogLevel()
-	writeLogFile()
+	newSearchExample()
+	//writeLogFile()
 }
 
 func writeLogFile() {
+
 	path := "./log/api.log"
 	s := storage.Opt.WithFile(path).Backups(100).Compress(3).SaveTime(10).MaxSize(10).Done()
 	clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Default()
@@ -62,4 +64,24 @@ func changeLogLevel() {
 		clog.Error().Msg("error")
 		time.Sleep(time.Millisecond * 300)
 	}
+}
+
+type SearchExample struct {
+	count int
+	log   clog.Logger
+}
+
+func newSearchExample() {
+	example := SearchExample{
+		log: clog.NewOption().WithLogLevel(clog.InfoLevel).WithWriter(os.Stdout).Logger(),
+	}
+	example.log.ResetStrPrefix("searchId", time.Now().UnixNano())
+
+	example.log.Info().Interface("data", 1).Msg("")
+	example.log.Error().Interface("data", 1).Msg("")
+	example.log.Info().Interface("data", 1).Msg("")
+	example.log.AppendStrPrefix("sec", time.Now().UnixNano())
+	example.log.Info().Interface("data", 1).Msg("")
+	example.log.Info().Interface("data", 1).Msg("")
+	example.log.Info().Interface("data", 1).Msg("")
 }

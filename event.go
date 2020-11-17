@@ -328,8 +328,8 @@ func (e *Event) Err(err error) *Event {
 	if e == nil {
 		return e
 	}
-	if e.stack && errorStackMarshaler != nil {
-		switch m := errorStackMarshaler(err).(type) {
+	if e.stack && errorStackMarshal != nil {
+		switch m := errorStackMarshal(err).(type) {
 		case nil:
 		case LogObjectMarshaler:
 			e.Object(errorStackFieldName, m)

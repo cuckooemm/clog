@@ -32,7 +32,7 @@ func (l Level) String() string {
 type Logger struct {
 	w       LevelWriter
 	level   Level
-	context []byte
+	preStr  []byte
 	hooks   []Hook
 	preHook []Hook
 }
@@ -66,6 +66,19 @@ func (l *Logger) output(w io.Writer) {
 		lw = levelWriterAdapter{w}
 	}
 	l.w = lw
+}
+
+// SetStrPrefix set prefix string
+func (l *Logger) ResetStrPrefix(key string, val interface{}) {
+	l.preStr = nil
+	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
+}
+
+func (l *Logger) AppendStrPrefix(key string, val interface{}) {
+	if len(l.preStr) > 0 {
+		l.preStr = append(l.preStr, ',')
+	}
+	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
 }
 
 // GetLevel returns the current Level of l.
@@ -211,8 +224,8 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 		return nil
 	}
 	e := newEvent(l.w, level)
-	if l.context != nil && len(l.context) > 1 {
-		e.buf = trs.AppendObjectData(e.buf, l.context)
+	if l.preStr != nil && len(l.preStr) > 0 {
+		e.buf = append(e.buf, l.preStr...)
 	}
 	for _, hook := range l.preHook {
 		hook.Run(e, level, "")

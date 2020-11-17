@@ -52,11 +52,6 @@ func (o *options) WithLogLevel(lvl Level) *options {
 	return o
 }
 
-func (o *options) WithPrefix(key, value string) *options {
-	o.prefix = trs.AppendString(append(trs.AppendString(o.prefix, key), ':'), value)
-	return o
-}
-
 func (o *options) WithTimestamp() *options {
 	o.preHooks = append(o.hooks, th)
 	return o
@@ -71,7 +66,7 @@ func (o *options) Default() {
 	clog.preHook = append(clog.preHook, o.preHooks...)
 	clog.w = o.w
 	clog.level = o.level
-	clog.context = append(clog.context, o.prefix...)
+	clog.preStr = append(clog.preStr, o.prefix...)
 }
 
 func (o *options) Logger() Logger {
@@ -80,7 +75,7 @@ func (o *options) Logger() Logger {
 	log.preHook = append(log.preHook, o.preHooks...)
 	log.w = o.w
 	log.level = o.level
-	log.context = append(log.context, o.prefix...)
+	log.preStr = append(log.preStr, o.prefix...)
 	return log
 }
 
@@ -105,8 +100,8 @@ func (s setting) SetTimestampFunc(f func() time.Time) setting {
 	timestampFunc = f
 	return s
 }
-func (s setting) SetErrStackMarshaler(f func(err error) interface{}) setting {
-	errorStackMarshaler = f
+func (s setting) SetErrStackMarshal(f func(err error) interface{}) setting {
+	errorStackMarshal = f
 	return s
 }
 func (s setting) SetBaseTimeDurationUnit(d time.Duration) setting {
