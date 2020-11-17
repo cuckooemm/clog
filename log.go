@@ -32,7 +32,7 @@ func (l Level) String() string {
 type Logger struct {
 	w       LevelWriter
 	level   Level
-	context []byte
+	preStr  []byte
 	hooks   []Hook
 	preHook []Hook
 }
@@ -66,6 +66,83 @@ func (l *Logger) output(w io.Writer) {
 		lw = levelWriterAdapter{w}
 	}
 	l.w = lw
+}
+
+// SetStrPrefix set prefix string
+func (l *Logger) ResetStrPrefix(key string, val interface{}) {
+	l.preStr = nil
+	l.preStr = append(trs.AppendString(l.preStr, key), ':')
+	switch val := val.(type) {
+	case int:
+		l.preStr = trs.AppendInt(l.preStr, val)
+	case int8:
+		l.preStr = trs.AppendInt8(l.preStr, val)
+	case int16:
+		l.preStr = trs.AppendInt16(l.preStr, val)
+	case int32:
+		l.preStr = trs.AppendInt32(l.preStr, val)
+	case int64:
+		l.preStr = trs.AppendInt64(l.preStr, val)
+	case uint:
+		l.preStr = trs.AppendUint(l.preStr, val)
+	case uint16:
+		l.preStr = trs.AppendUint16(l.preStr, val)
+	case uint32:
+		l.preStr = trs.AppendUint32(l.preStr, val)
+	case uint64:
+		l.preStr = trs.AppendUint64(l.preStr, val)
+	case float32:
+		l.preStr = trs.AppendFloat32(l.preStr, val)
+	case float64:
+		l.preStr = trs.AppendFloat64(l.preStr, val)
+	case bool:
+		l.preStr = trs.AppendBool(l.preStr, val)
+	case string:
+		l.preStr = trs.AppendString(l.preStr, val)
+	case []byte:
+		l.preStr = trs.AppendBytes(l.preStr, val)
+	default:
+		l.preStr = trs.AppendInterface(l.preStr, val)
+	}
+}
+
+func (l *Logger) AppendStrPrefix(key string, val interface{}) {
+	if len(l.preStr) > 0 {
+		l.preStr = append(l.preStr, ',')
+	}
+	l.preStr = append(trs.AppendString(l.preStr, key), ':')
+	switch val := val.(type) {
+	case int:
+		l.preStr = trs.AppendInt(l.preStr, val)
+	case int8:
+		l.preStr = trs.AppendInt8(l.preStr, val)
+	case int16:
+		l.preStr = trs.AppendInt16(l.preStr, val)
+	case int32:
+		l.preStr = trs.AppendInt32(l.preStr, val)
+	case int64:
+		l.preStr = trs.AppendInt64(l.preStr, val)
+	case uint:
+		l.preStr = trs.AppendUint(l.preStr, val)
+	case uint16:
+		l.preStr = trs.AppendUint16(l.preStr, val)
+	case uint32:
+		l.preStr = trs.AppendUint32(l.preStr, val)
+	case uint64:
+		l.preStr = trs.AppendUint64(l.preStr, val)
+	case float32:
+		l.preStr = trs.AppendFloat32(l.preStr, val)
+	case float64:
+		l.preStr = trs.AppendFloat64(l.preStr, val)
+	case bool:
+		l.preStr = trs.AppendBool(l.preStr, val)
+	case string:
+		l.preStr = trs.AppendString(l.preStr, val)
+	case []byte:
+		l.preStr = trs.AppendBytes(l.preStr, val)
+	default:
+		l.preStr = trs.AppendInterface(l.preStr, val)
+	}
 }
 
 // GetLevel returns the current Level of l.
@@ -211,8 +288,8 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 		return nil
 	}
 	e := newEvent(l.w, level)
-	if l.context != nil && len(l.context) > 1 {
-		e.buf = trs.AppendObjectData(e.buf, l.context)
+	if l.preStr != nil && len(l.preStr) > 0 {
+		e.buf = append(e.buf, l.preStr...)
 	}
 	for _, hook := range l.preHook {
 		hook.Run(e, level, "")

@@ -69,9 +69,8 @@ var (
 	}
 	// timestampFunc defines the function called to generate a timestamp.
 	timestampFunc = time.Now
-	// ErrorStackMarshaler extract the stack from err if any.
-	errorStackMarshaler func(err error) interface{}
-
+	// ErrorStackMarshal extract the stack from err if any.
+	errorStackMarshal func(err error) interface{}
 	// durationFieldUnit defines the unit for time.Duration type fields added
 	// timeDuration / durationFieldUnit
 	durationFieldUnit = time.Millisecond
