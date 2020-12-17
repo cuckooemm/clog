@@ -42,6 +42,12 @@ type Rotate struct {
 	startMill     sync.Once
 }
 
+func (fw *Rotate) Close() {
+	fw.mu.Lock()
+	_ = fw.file.Sync()
+	_ = fw.file.Close()
+	fw.mu.Unlock()
+}
 func newFileWrite(path string, size, line, day, backups, compressAfter int, compress bool) *Rotate {
 	fw := new(Rotate)
 	fw.path = path

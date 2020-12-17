@@ -22,7 +22,7 @@ func writeLogFile() {
 	s := storage.Opt.WithFile(path).Backups(100).Compress(3).SaveTime(10).MaxSize(10).Done()
 	clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Default()
 	clog.Set.SetBaseTimeDurationInteger()
-
+	defer s.Close()
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
