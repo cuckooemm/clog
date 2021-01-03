@@ -36,7 +36,7 @@ type Rotate struct {
 	maxBackups    int  // 备份文件数量
 	compress      bool // 备份文件是否压缩
 	compressAfter int  // 几天后的日志进行压缩
-	file          *os.File
+	fd            *os.File
 	mu            sync.Mutex
 	millCh        chan struct{}
 	startMill     sync.Once
@@ -61,12 +61,12 @@ func newFileWrite(path string, size, line, day, backups, compressAfter int, comp
 	if fw.maxLine <= 0 {
 		fw.maxLine = math.MaxInt64
 	}
+	fw.compress = compress
 	if fw.maxDay > 0 || fw.compress || fw.maxBackups > 0 {
 		fw.millCh = make(chan struct{}, 1)
 		go fw.millRun()
 		fw.mill()
 	}
-	fw.compress = compress
 
 	if err := fw.firstOpenExistOrNew(); err != nil {
 		panic(err)
@@ -75,97 +75,97 @@ func newFileWrite(path string, size, line, day, backups, compressAfter int, comp
 	return fw
 }
 
-func (fw *Rotate) WriteLevel(level clog.Level, p []byte) (n int, err error) {
+func (r *Rotate) WriteLevel(level clog.Level, p []byte) (n int, err error) {
 
-	return fw.Write(p)
+	return r.Write(p)
 }
 
-func (fw *Rotate) Write(p []byte) (n int, err error) {
-	fw.mu.Lock()
-	defer fw.mu.Unlock()
-	if len(p) > fw.lastSize {
-		if err := fw.rotate(); err != nil {
+func (r *Rotate) Write(p []byte) (n int, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if len(p) > r.lastSize {
+		if err := r.rotate(); err != nil {
 			return 0, err
 		}
 	}
-	if fw.lastLine <= 0 {
-		if err := fw.rotate(); err != nil {
+	if r.lastLine <= 0 {
+		if err := r.rotate(); err != nil {
 			return 0, err
 		}
 	}
-	fw.lastLine--
-	n, err = fw.file.Write(p)
-	fw.lastSize -= n
+	r.lastLine--
+	n, err = r.fd.Write(p)
+	r.lastSize -= n
 	return n, err
 }
 
-func (fw *Rotate) firstOpenExistOrNew() error {
+func (r *Rotate) firstOpenExistOrNew() error {
 	var (
 		info os.FileInfo
 		err  error
 	)
-	if info, err = os.Stat(fw.path); err != nil {
+	if info, err = os.Stat(r.path); err != nil {
 		if os.IsNotExist(err) {
-			return fw.openNew()
+			return r.openNew()
 		}
 		return fmt.Errorf("error getting log file info: %s", err.Error())
 	}
 
-	if fw.file, err = os.OpenFile(fw.path, os.O_APPEND|os.O_RDWR, 0644); err != nil {
+	if r.fd, err = os.OpenFile(r.path, os.O_APPEND|os.O_WRONLY, 0644); err != nil {
 
 		// open old log to failed - ignore
 		// open a new log file.
-		return fw.openNew()
+		return r.openNew()
 	}
 
-	if info.Size() >= int64(fw.maxSize) {
-		return fw.rotate()
+	if info.Size() >= int64(r.maxSize) {
+		return r.rotate()
 	}
-	fw.lastSize = int(int64(fw.maxSize) - info.Size())
+	r.lastSize = int(int64(r.maxSize) - info.Size())
 	// 得到文件当前行数
-	if fw.lastLine, err = lineCounter(fw.file); err != nil {
+	if r.lastLine, err = lineCounter(r.fd); err != nil {
 		return err
 	}
 
-	if fw.lastLine >= fw.maxLine {
-		return fw.rotate()
+	if r.lastLine >= r.maxLine {
+		return r.rotate()
 	}
 	// 计算剩余行数
-	fw.lastLine = fw.maxLine - fw.lastLine
+	r.lastLine = r.maxLine - r.lastLine
 	return nil
 }
 
-func (fw *Rotate) rotate() error {
-	if err := fw.openNew(); err != nil {
+func (r *Rotate) rotate() error {
+	if err := r.openNew(); err != nil {
 		return err
 	}
-	fw.mill()
+	r.mill()
 	return nil
 }
 
-func (fw *Rotate) mill() {
+func (r *Rotate) mill() {
 	select {
-	case fw.millCh <- struct{}{}:
+	case r.millCh <- struct{}{}:
 	default:
 	}
 }
 
-func (fw *Rotate) millRun() {
-	for range fw.millCh {
-		fw.millRunOnce()
+func (r *Rotate) millRun() {
+	for range r.millCh {
+		r.millRunOnce()
 	}
 }
 
-func (fw *Rotate) millRunOnce() {
+func (r *Rotate) millRunOnce() {
 	var (
 		compress, remove, files []logInfo
 		err                     error
 	)
-	if files, err = fw.oldLogFiles(); err != nil {
+	if files, err = r.oldLogFiles(); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "clog: get old log file err %s\n", err.Error())
 		return
 	}
-	if fw.maxBackups > 0 && fw.maxBackups < len(files) {
+	if r.maxBackups > 0 && r.maxBackups < len(files) {
 		preserved := make(map[string]struct{})
 		var remaining []logInfo
 		for _, f := range files {
@@ -176,7 +176,7 @@ func (fw *Rotate) millRunOnce() {
 				fn = fn[:len(fn)-len(compressSuffix)]
 			}
 			preserved[fn] = struct{}{}
-			if len(preserved) > fw.maxBackups {
+			if len(preserved) > r.maxBackups {
 				remove = append(remove, f)
 			} else {
 				remaining = append(remaining, f)
@@ -184,8 +184,8 @@ func (fw *Rotate) millRunOnce() {
 		}
 		files = remaining
 	}
-	if fw.maxDay > 0 {
-		cutoff := currentTime().AddDate(0, 0, -fw.maxDay)
+	if r.maxDay > 0 {
+		cutoff := currentTime().AddDate(0, 0, -r.maxDay)
 		var remaining []logInfo
 		for _, f := range files {
 			if f.timestamp.Before(cutoff) {
@@ -198,8 +198,8 @@ func (fw *Rotate) millRunOnce() {
 	}
 
 	// 压缩n天后的文件
-	if fw.compress {
-		compressTime := currentTime().AddDate(0, 0, -fw.compressAfter)
+	if r.compress {
+		compressTime := currentTime().AddDate(0, 0, -r.compressAfter)
 		for _, f := range files {
 			if !strings.HasSuffix(f.Name(), compressSuffix) && f.timestamp.Before(compressTime) {
 				compress = append(compress, f)
@@ -208,12 +208,12 @@ func (fw *Rotate) millRunOnce() {
 	}
 
 	for _, f := range remove {
-		if err = os.Remove(filepath.Join(fw.dirPath, f.Name())); err != nil {
+		if err = os.Remove(filepath.Join(r.dirPath, f.Name())); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "clog: remove old log file %s err %s\n", f.Name(), err.Error())
 		}
 	}
 	for _, f := range compress {
-		fn := filepath.Join(fw.dirPath, f.Name())
+		fn := filepath.Join(r.dirPath, f.Name())
 		if err = compressLogFile(fn, fn+compressSuffix); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "clog: compress log file %s err %s\n", f.Name(), err.Error())
 		}
@@ -221,25 +221,25 @@ func (fw *Rotate) millRunOnce() {
 	return
 }
 
-func (fw *Rotate) oldLogFiles() ([]logInfo, error) {
+func (r *Rotate) oldLogFiles() ([]logInfo, error) {
 	var (
 		files    []os.FileInfo
 		logFiles []logInfo
 		err      error
 	)
-	if files, err = ioutil.ReadDir(fw.dirPath); err != nil {
+	if files, err = ioutil.ReadDir(r.dirPath); err != nil {
 		return nil, fmt.Errorf("can't read log file directory: %s", err)
 	}
-	prefix, ext := fw.prefixAndExt()
+	prefix, ext := r.prefixAndExt()
 	for _, f := range files {
 		if f.IsDir() {
 			continue
 		}
-		if t, err := fw.timeFromName(f.Name(), prefix, ext); err == nil {
+		if t, err := r.timeFromName(f.Name(), prefix, ext); err == nil {
 			logFiles = append(logFiles, logInfo{t, f})
 			continue
 		}
-		if t, err := fw.timeFromName(f.Name(), prefix, ext+compressSuffix); err == nil {
+		if t, err := r.timeFromName(f.Name(), prefix, ext+compressSuffix); err == nil {
 			logFiles = append(logFiles, logInfo{t, f})
 			continue
 		}
@@ -250,59 +250,57 @@ func (fw *Rotate) oldLogFiles() ([]logInfo, error) {
 	return logFiles, nil
 }
 
-// openNew opens a new log file for writing, moving any old log file out of the
-// way.  This methods assumes the file has already been closed.
-func (fw *Rotate) openNew() error {
+// openNew opens a new log file for writing, moving any old log file out of the way.
+// This methods assumes the file has already been closed.
+func (r *Rotate) openNew() error {
 	mode := os.FileMode(0644)
-	info, err := os.Stat(fw.path)
-	if fw.file != nil {
-		if err := fw.file.Close(); err != nil {
+	if r.fd != nil {
+		if err := r.fd.Close(); err != nil {
 			return err
 		}
 	}
+	info, err := os.Stat(r.path)
 	// 文件存在 备份此文件
 	if err == nil {
 		// Copy the mode off the old logfile.
 		mode = info.Mode()
 		// move the existing file
-		if err := os.Rename(fw.path, fw.backupName()); err != nil {
-			return fmt.Errorf("can't rename log file: %s", err)
+		if err = os.Rename(r.path, r.backupName()); err != nil {
+			return fmt.Errorf("can't rename log file: %s. err: %s", r.path, err.Error())
 		}
 	}
-	f, err := os.OpenFile(fw.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
+	if r.fd, err = os.OpenFile(r.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode); err != nil {
 		return fmt.Errorf("can't open new logfile: %s", err)
 	}
-	fw.file = f
-	fw.lastSize = fw.maxSize
-	fw.lastLine = fw.maxLine
+	r.lastSize = r.maxSize
+	r.lastLine = r.maxLine
 	return nil
 }
 
-func (fw *Rotate) prefixAndExt() (prefix, ext string) {
-	ext = filepath.Ext(fw.name)
-	prefix = fw.name[:len(fw.name)-len(ext)]
-	return prefix + "-", ext
+// example.log  prefix = example ext = .log
+func (r *Rotate) prefixAndExt() (prefix, ext string) {
+	ext = filepath.Ext(r.name)
+	prefix = r.name[:len(r.name)-len(ext)]
+	return
 }
 
-func (fw *Rotate) timeFromName(filename, prefix, ext string) (time.Time, error) {
+func (r *Rotate) timeFromName(filename, prefix, ext string) (time.Time, error) {
 	if !strings.HasPrefix(filename, prefix) {
 		return time.Time{}, errors.New("mismatched prefix")
 	}
 	if !strings.HasSuffix(filename, ext) {
 		return time.Time{}, errors.New("mismatched extension")
 	}
-	ts := filename[len(prefix) : len(filename)-len(ext)]
-	return time.Parse(backupTimeFormat, ts)
+	return time.Parse(backupTimeFormat, filename[len(prefix):len(filename)-len(ext)])
 }
 
 // backupName creates a new filename from the given name, inserting a timestamp
 // between the filename and the extension, using the local time if requested
 // (otherwise UTC).
-func (fw *Rotate) backupName() string {
-	prefix, ext := fw.prefixAndExt()
+func (r *Rotate) backupName() string {
+	prefix, ext := r.prefixAndExt()
 	timestamp := currentTime().Format(backupTimeFormat)
-	return filepath.Join(fw.dirPath, fmt.Sprintf("%s%s%s", prefix, timestamp, ext))
+	return filepath.Join(r.dirPath, fmt.Sprintf("%s%s%s", prefix, timestamp, ext))
 }
 
 // compressLogFile compresses the given log file, removing the
