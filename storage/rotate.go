@@ -8,7 +8,6 @@ import (
 	"github.com/cuckooemm/clog"
 	"io"
 	"io/ioutil"
-	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -24,7 +23,7 @@ const (
 
 var currentTime = time.Now
 
-type Rotate struct {
+type SizeRotate struct {
 	path          string
 	dirPath       string
 	name          string
@@ -32,74 +31,50 @@ type Rotate struct {
 	lastSize      int  // 剩余可写空间
 	maxLine       int  // 文件最大可写行
 	lastLine      int  // 文件剩余可写行
-	maxDay        int  // 备份文件保存时间
+	saveDay       int  // 备份文件保存时间
 	maxBackups    int  // 备份文件数量
 	compress      bool // 备份文件是否压缩
 	compressAfter int  // 几天后的日志进行压缩
 	fd            *os.File
-	mu            sync.Mutex
+	mu            *sync.Mutex
 	millCh        chan struct{}
-	startMill     sync.Once
 }
 
-func newFileWrite(path string, size, line, day, backups, compressAfter int, compress bool) *Rotate {
-	fw := new(Rotate)
-	fw.path = path
-	fw.dirPath = filepath.Dir(path)
-	if err := os.MkdirAll(fw.dirPath, 0755); err != nil {
-		panic(err)
-	}
-	fw.name = filepath.Base(path)
-	fw.maxDay = day
-	fw.maxBackups = backups
-	fw.maxSize = size
-	if fw.maxSize <= 0 {
-		fw.maxSize = math.MaxInt64
-	}
-	fw.compressAfter = compressAfter
-	fw.maxLine = line
-	if fw.maxLine <= 0 {
-		fw.maxLine = math.MaxInt64
-	}
-	fw.compress = compress
-	if fw.maxDay > 0 || fw.compress || fw.maxBackups > 0 {
-		fw.millCh = make(chan struct{}, 1)
-		go fw.millRun()
-		fw.mill()
-	}
-
-	if err := fw.firstOpenExistOrNew(); err != nil {
-		panic(err)
-	}
-
-	return fw
+func (r *SizeRotate) Close() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	close(r.millCh)
+	_ = r.fd.Sync()
+	_ = r.fd.Close()
 }
-
-func (r *Rotate) WriteLevel(level clog.Level, p []byte) (n int, err error) {
-
+func (r *SizeRotate) WriteLevel(level clog.Level, p []byte) (n int, err error) {
 	return r.Write(p)
 }
 
-func (r *Rotate) Write(p []byte) (n int, err error) {
+func (r *SizeRotate) Write(p []byte) (n int, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if len(p) > r.lastSize {
-		if err := r.rotate(); err != nil {
-			return 0, err
+	if r.maxSize > 0 {
+		if len(p) > r.lastSize {
+			if err = r.rotate(); err != nil {
+				return 0, err
+			}
 		}
+		r.lastSize -= len(p)
 	}
-	if r.lastLine <= 0 {
-		if err := r.rotate(); err != nil {
-			return 0, err
+	if r.maxLine > 0 {
+		if r.lastLine <= 0 {
+			if err = r.rotate(); err != nil {
+				return 0, err
+			}
 		}
+		r.lastLine--
 	}
-	r.lastLine--
 	n, err = r.fd.Write(p)
-	r.lastSize -= n
 	return n, err
 }
 
-func (r *Rotate) firstOpenExistOrNew() error {
+func (r *SizeRotate) firstOpenExistOrNew() error {
 	var (
 		info os.FileInfo
 		err  error
@@ -112,30 +87,33 @@ func (r *Rotate) firstOpenExistOrNew() error {
 	}
 
 	if r.fd, err = os.OpenFile(r.path, os.O_APPEND|os.O_WRONLY, 0644); err != nil {
-
 		// open old log to failed - ignore
 		// open a new log file.
 		return r.openNew()
 	}
-
-	if info.Size() >= int64(r.maxSize) {
-		return r.rotate()
+	if r.maxSize > 0 {
+		if info.Size() >= int64(r.maxSize) {
+			return r.rotate()
+		} else {
+			r.lastSize = int(int64(r.maxSize) - info.Size())
+		}
 	}
-	r.lastSize = int(int64(r.maxSize) - info.Size())
-	// 得到文件当前行数
-	if r.lastLine, err = lineCounter(r.fd); err != nil {
-		return err
+	if r.maxLine > 0 {
+		// 得到文件当前行数
+		var curLine int
+		if curLine, err = lineCounter(r.fd); err != nil {
+			return err
+		}
+		if curLine >= r.maxLine {
+			return r.rotate()
+		} else {
+			r.lastLine = r.maxLine - curLine
+		}
 	}
-
-	if r.lastLine >= r.maxLine {
-		return r.rotate()
-	}
-	// 计算剩余行数
-	r.lastLine = r.maxLine - r.lastLine
 	return nil
 }
 
-func (r *Rotate) rotate() error {
+func (r *SizeRotate) rotate() error {
 	if err := r.openNew(); err != nil {
 		return err
 	}
@@ -143,20 +121,20 @@ func (r *Rotate) rotate() error {
 	return nil
 }
 
-func (r *Rotate) mill() {
+func (r *SizeRotate) mill() {
 	select {
 	case r.millCh <- struct{}{}:
 	default:
 	}
 }
 
-func (r *Rotate) millRun() {
+func (r *SizeRotate) millRun() {
 	for range r.millCh {
 		r.millRunOnce()
 	}
 }
 
-func (r *Rotate) millRunOnce() {
+func (r *SizeRotate) millRunOnce() {
 	var (
 		compress, remove, files []logInfo
 		err                     error
@@ -184,8 +162,8 @@ func (r *Rotate) millRunOnce() {
 		}
 		files = remaining
 	}
-	if r.maxDay > 0 {
-		cutoff := currentTime().AddDate(0, 0, -r.maxDay)
+	if r.saveDay > 0 {
+		cutoff := currentTime().AddDate(0, 0, -r.saveDay)
 		var remaining []logInfo
 		for _, f := range files {
 			if f.timestamp.Before(cutoff) {
@@ -221,7 +199,7 @@ func (r *Rotate) millRunOnce() {
 	return
 }
 
-func (r *Rotate) oldLogFiles() ([]logInfo, error) {
+func (r *SizeRotate) oldLogFiles() ([]logInfo, error) {
 	var (
 		files    []os.FileInfo
 		logFiles []logInfo
@@ -252,7 +230,7 @@ func (r *Rotate) oldLogFiles() ([]logInfo, error) {
 
 // openNew opens a new log file for writing, moving any old log file out of the way.
 // This methods assumes the file has already been closed.
-func (r *Rotate) openNew() error {
+func (r *SizeRotate) openNew() error {
 	mode := os.FileMode(0644)
 	if r.fd != nil {
 		if err := r.fd.Close(); err != nil {
@@ -277,14 +255,13 @@ func (r *Rotate) openNew() error {
 	return nil
 }
 
-// example.log  prefix = example ext = .log
-func (r *Rotate) prefixAndExt() (prefix, ext string) {
+func (r *SizeRotate) prefixAndExt() (prefix, ext string) {
 	ext = filepath.Ext(r.name)
-	prefix = r.name[:len(r.name)-len(ext)]
+	prefix = r.name[:len(r.name)-len(ext)] + "-"
 	return
 }
 
-func (r *Rotate) timeFromName(filename, prefix, ext string) (time.Time, error) {
+func (r *SizeRotate) timeFromName(filename, prefix, ext string) (time.Time, error) {
 	if !strings.HasPrefix(filename, prefix) {
 		return time.Time{}, errors.New("mismatched prefix")
 	}
@@ -297,7 +274,7 @@ func (r *Rotate) timeFromName(filename, prefix, ext string) (time.Time, error) {
 // backupName creates a new filename from the given name, inserting a timestamp
 // between the filename and the extension, using the local time if requested
 // (otherwise UTC).
-func (r *Rotate) backupName() string {
+func (r *SizeRotate) backupName() string {
 	prefix, ext := r.prefixAndExt()
 	timestamp := currentTime().Format(backupTimeFormat)
 	return filepath.Join(r.dirPath, fmt.Sprintf("%s%s%s", prefix, timestamp, ext))

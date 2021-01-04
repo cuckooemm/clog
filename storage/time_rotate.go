@@ -17,15 +17,15 @@ type TimeRotate struct {
 	path          string
 	dirPath       string
 	name          string
-	maxDay        int    // 备份文件保存时间
+	saveDay       int    // 备份文件保存时间
 	maxBackups    int    // 备份文件数量
 	compress      bool   // 备份文件是否压缩
 	compressAfter int    // 几天后的日志进行压缩
 	timeFormat    string // 文件时间格式
 	interval      int64  // 时间间隔
 	fd            *os.File
-	mu            sync.Mutex
-	startMill     sync.Once
+	mu            *sync.Mutex
+	ch            chan struct{}
 }
 
 func (r *TimeRotate) WriteLevel(level clog.Level, p []byte) (int, error) {
@@ -38,46 +38,20 @@ func (r *TimeRotate) Write(p []byte) (int, error) {
 	return r.fd.Write(p)
 }
 
-func newTimeFileWrite(path string, interval time.Duration, day, backups, compressAfter int, compress bool) *TimeRotate {
-	fw := new(TimeRotate)
-	fw.path = path
-	fw.dirPath = filepath.Dir(path)
-	if err := os.MkdirAll(fw.dirPath, 0755); err != nil {
-		panic(err)
-	}
-	fw.name = filepath.Base(path)
-	fw.maxDay = day
-	fw.maxBackups = backups
-	fw.compressAfter = compressAfter
-	fw.compress = compress
-	fw.interval = int64(interval.Seconds())
-	if interval >= time.Minute {
-		if interval >= time.Hour {
-			if interval >= time.Hour*24 {
-				fw.timeFormat = "20060102"
-			} else {
-				fw.timeFormat = "2006010215"
-			}
-		} else {
-			fw.timeFormat = "200601021504"
-		}
-	} else {
-		panic("file split time is too short")
-	}
-
-	if err := fw.firstOpenExistOrNew(); err != nil {
-		panic(err)
-	}
-
-	go fw.whileRun()
-
-	return fw
+func (r *TimeRotate) Close() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	close(r.ch)
+	_ = r.fd.Sync()
+	_ = r.fd.Close()
 }
 
 func (r *TimeRotate) whileRun() {
 	for {
 		splitTIme := time.Unix(time.Now().Unix()/r.interval*r.interval+r.interval, 0)
 		select {
+		case <-r.ch:
+			break
 		case <-time.After(splitTIme.Sub(time.Now())):
 			r.mu.Lock()
 			_ = r.openNew(splitTIme)
@@ -115,8 +89,8 @@ func (r *TimeRotate) processCompress() {
 		}
 		files = remaining
 	}
-	if r.maxDay > 0 {
-		cutoff := currentTime().AddDate(0, 0, -r.maxDay)
+	if r.saveDay > 0 {
+		cutoff := currentTime().AddDate(0, 0, -r.saveDay)
 		var remaining []logInfo
 		for _, f := range files {
 			if f.timestamp.Before(cutoff) {
