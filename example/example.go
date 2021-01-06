@@ -12,14 +12,16 @@ import (
 
 func main() {
 	//changeLogLevel()
-	newSearchExample()
-	//writeLogFile()
+	//newSearchExample()
+	writeLogFile()
 }
 
 func writeLogFile() {
 
 	path := "./log/api.log"
-	s := storage.Opt.WithFile(path).Backups(100).Compress(3).SaveTime(10).MaxSize(10).Done()
+	//s := storage.NewSizeSplitFile(path).Backups(10).MaxSize(10).SaveTime(4).Compress(3).Finish()
+	s := storage.NewTimeSplitFile(path, time.Minute).Backups(3).SaveTime(3).Finish()
+	defer s.Close()
 	clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Default()
 	clog.Set.SetBaseTimeDurationInteger()
 	defer s.Close()
