@@ -19,12 +19,11 @@ func main() {
 func writeLogFile() {
 
 	path := "./log/api.log"
-	//s := storage.NewSizeSplitFile(path).Backups(10).MaxSize(10).SaveTime(4).Compress(3).Finish()
-	s := storage.NewTimeSplitFile(path, time.Minute).Backups(3).SaveTime(3).Finish()
+	//s := storage.NewSizeSplitFile(path).Backups(10).MaxSize(50).SaveTime(4).Compress(3).Finish()
+	s := storage.NewTimeSplitFile(path, time.Minute).Backups(3).SaveTime(3).Compress(2).Finish()
 	defer s.Close()
 	clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Default()
 	clog.Set.SetBaseTimeDurationInteger()
-	defer s.Close()
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
