@@ -268,7 +268,7 @@ func (r *SizeRotate) timeFromName(filename, prefix, ext string) (time.Time, erro
 	if !strings.HasSuffix(filename, ext) {
 		return time.Time{}, errors.New("mismatched extension")
 	}
-	return time.Parse(backupTimeFormat, filename[len(prefix):len(filename)-len(ext)])
+	return time.ParseInLocation(backupTimeFormat, filename[len(prefix):len(filename)-len(ext)], time.Local)
 }
 
 // backupName creates a new filename from the given name, inserting a timestamp

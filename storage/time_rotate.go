@@ -47,6 +47,7 @@ func (r *TimeRotate) Close() {
 }
 
 func (r *TimeRotate) whileRun() {
+	r.processCompress()
 	for {
 		splitTIme := time.Unix(time.Now().Unix()/r.interval*r.interval+r.interval, 0)
 		select {
@@ -171,7 +172,7 @@ func (r *TimeRotate) timeFromName(filename, prefix, compressSuffix string) (time
 		}
 		filename = filename[:len(filename)-len(compressSuffix)]
 	}
-	return time.Parse(r.timeFormat, filename[len(prefix)+1:])
+	return time.ParseInLocation(r.timeFormat, filename[len(prefix)+1:], time.Local)
 }
 
 func (r *TimeRotate) backupName(tm time.Time) string {
