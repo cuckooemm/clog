@@ -30,7 +30,7 @@ func writeLogFile() {
 		gid := i
 		go func() {
 			for j := 0; j < 1000; j++ {
-				clog.Info().Int("goroutine id", gid).Int("idx", j).Str("msg", "suibian").Msg("dhad")
+				clog.Info().Int("goroutine id", gid).Int("idx", j).Str("msg", "foo").Msg("bar")
 				clog.Warn().TimeDur("timedur", time.Second*3+time.Minute*9).Cease()
 			}
 			wg.Done()

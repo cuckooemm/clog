@@ -84,3 +84,14 @@ func Printf(format string, v ...interface{}) {
 func GetLevel() Level {
 	return clog.level
 }
+
+// 获取副本 继承默认Logger 的配置
+func CopyDefault() Logger {
+	return Logger{
+		w:       clog.w,
+		level:   clog.level,
+		preStr:  clog.preStr,
+		preHook: clog.preHook,
+		hooks:   clog.hooks,
+	}
+}

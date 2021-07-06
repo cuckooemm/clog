@@ -19,7 +19,7 @@ func (handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	levelStr := req.URL.Query().Get("level")
 	level, err := clog.ParseLevel(levelStr)
 	if err != nil {
-		_, _ = w.Write([]byte("support level [trace,debug,info,warn,error,fatal,panic,nil]\n eg: curl -X PUT http://url/path?level=info"))
+		_, _ = w.Write([]byte("support level [trace,debug,info,warn,error,fatal,panic,nil]\n eg: curl -X PUT http://host:port/path?level=info"))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

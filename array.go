@@ -22,8 +22,7 @@ type Array struct {
 
 func putArray(a *Array) {
 	if cap(a.buf) > maxCap {
-		//return
-		a.buf = a.buf[:0:initCap]
+		return
 	}
 	arrayPool.Put(a)
 }
