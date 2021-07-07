@@ -73,8 +73,9 @@ type SearchExample struct {
 }
 
 func newSearchExample() {
+	clog.NewOption().WithLogLevel(clog.InfoLevel).WithWriter(os.Stdout).Default()
 	example := SearchExample{
-		log: clog.NewOption().WithLogLevel(clog.InfoLevel).WithWriter(os.Stdout).Logger(),
+		log: clog.CopyDefault(),
 	}
 	example.log.ResetStrPrefix("searchId", time.Now().UnixNano())
 

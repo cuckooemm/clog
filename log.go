@@ -68,7 +68,7 @@ func (l *Logger) output(w io.Writer) {
 	l.w = lw
 }
 
-// SetStrPrefix set prefix string
+// ResetStrPrefix set prefix string
 func (l *Logger) ResetStrPrefix(key string, val interface{}) {
 	l.preStr = nil
 	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
