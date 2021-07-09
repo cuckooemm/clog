@@ -78,6 +78,11 @@ func (a *Array) Hex(val []byte) *Array {
 	return a
 }
 
+func (a *Array) HexStr(val string) *Array {
+	a.buf = trs.AppendHex(trs.AppendArrayDelim(a.buf), []byte(val))
+	return a
+}
+
 // RawJSON adds already trsoded JSON to the array.
 func (a *Array) RawJSON(val []byte) *Array {
 	a.buf = append(trs.AppendArrayDelim(a.buf), val...)

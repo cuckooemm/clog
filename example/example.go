@@ -69,7 +69,7 @@ func changeLogLevel() {
 
 type SearchExample struct {
 	count int
-	log   clog.Logger
+	log   *clog.Logger
 }
 
 func newSearchExample() {
@@ -78,7 +78,6 @@ func newSearchExample() {
 		log: clog.CopyDefault(),
 	}
 	example.log.ResetStrPrefix("searchId", time.Now().UnixNano())
-
 	example.log.Info().Interface("data", 1).Msg("")
 	example.log.Error().Interface("data", 1).Msg("")
 	example.log.Info().Interface("data", 1).Msg("")

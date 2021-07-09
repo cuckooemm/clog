@@ -245,12 +245,21 @@ func (e *Event) Bytes(key string, val []byte) *Event {
 	return e
 }
 
-// Hex adds the field key with val as a hex string to the *Event context.
+// Hex adds the field key with val as a hex []byte to the *Event context.
 func (e *Event) Hex(key string, val []byte) *Event {
 	if e == nil {
 		return e
 	}
 	e.buf = trs.AppendHex(trs.AppendKey(e.buf, key), val)
+	return e
+}
+
+// HexStr adds the field key with val as a hex string to the *Event context.
+func (e *Event) HexStr(key string, val string) *Event {
+	if e == nil {
+		return e
+	}
+	e.buf = trs.AppendHex(trs.AppendKey(e.buf, key), []byte(val))
 	return e
 }
 
@@ -453,7 +462,7 @@ func (e *Event) Int64(key string, i int64) *Event {
 	return e
 }
 
-// Int64s adds the field key with i as a []int64 to the *Event context.
+// Ints64 adds the field key with i as a []int64 to the *Event context.
 func (e *Event) Ints64(key string, i []int64) *Event {
 	if e == nil {
 		return e
@@ -610,7 +619,7 @@ func (e *Event) Time(key string, t time.Time) *Event {
 	return e
 }
 
-// Time adds the field key with t formated as string using clog.TimeFieldFormat.
+// TimeF the field key with t formated as string using clog.TimeFieldFormat.
 func (e *Event) TimeF(key string, t time.Time, format string) *Event {
 	if e == nil {
 		return e
