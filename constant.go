@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	maxCap  = 1 << 16 // 64KiB
+	maxCap  = 1 << 12 // 4KiB
 	initCap = 1 << 9  // 512B
 )
 

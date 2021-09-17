@@ -2,7 +2,7 @@ package clog
 
 import (
 	"io"
-	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -37,7 +37,7 @@ func (o *options) WithPreHook(hook ...Hook) *options {
 
 func (o *options) WithWriter(w io.Writer) *options {
 	if w == nil {
-		w = ioutil.Discard
+		w = os.Stderr
 	}
 	lw, ok := w.(LevelWriter)
 	if !ok {
@@ -53,7 +53,7 @@ func (o *options) WithLogLevel(lvl Level) *options {
 }
 
 func (o *options) WithTimestamp() *options {
-	o.preHooks = append(o.hooks, th)
+	o.preHooks = append(o.hooks, stp)
 	return o
 }
 

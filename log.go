@@ -33,8 +33,8 @@ type Logger struct {
 	w       LevelWriter
 	level   Level
 	preStr  []byte
-	hooks   []Hook
 	preHook []Hook
+	hooks   []Hook
 }
 
 func ParseLevel(levelStr string) (Level, error) {
@@ -64,7 +64,7 @@ func (l *Logger) output(w io.Writer) {
 	l.w = lw
 }
 
-// SetStrPrefix set prefix string
+// ResetStrPrefix set prefix string
 func (l *Logger) ResetStrPrefix(key string, val interface{}) {
 	l.preStr = nil
 	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
@@ -83,7 +83,7 @@ func (l Logger) GetLevel() Level {
 }
 
 // Hook returns a logger with the h Hook.
-func (l Logger) Hook(h Hook) Logger {
+func (l *Logger) Hook(h Hook) *Logger {
 	l.hooks = append(l.hooks, h)
 	return l
 }
@@ -227,7 +227,7 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 		hook.Run(e, level, "")
 	}
 	e.done = done
-	e.ch = l.hooks
+	e.hook = l.hooks
 	if level != NoLevel {
 		e.Str(levelFieldName, levelFieldMarshalFunc(level))
 	}
@@ -235,7 +235,7 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 }
 
 // should returns true if the log event should be logged.
-func (l *Logger) should(lvl Level) bool {
+func (l Logger) should(lvl Level) bool {
 	if lvl < l.level || lvl < GlobalLevel() {
 		return false
 	}

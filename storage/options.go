@@ -70,7 +70,7 @@ func (t *timeRotateOption) Finish() *TimeRotate {
 	if err := t.timeRotate.firstOpenExistOrNew(); err != nil {
 		panic(err)
 	}
-	t.timeRotate.ch = make(chan struct{})
+	t.timeRotate.ch = make(chan struct{}, 1)
 	go t.timeRotate.whileRun()
 	return t.timeRotate
 }

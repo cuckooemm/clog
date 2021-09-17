@@ -6,10 +6,10 @@ type Hook interface {
 	Run(e *Event, level Level, message string)
 }
 
-var th = timestampHook{}
+var stp = timestampHook{}
 
 type timestampHook struct{}
 
-func (ts timestampHook) Run(e *Event, level Level, msg string) {
+func (ts timestampHook) Run(e *Event, _ Level, _ string) {
 	e.Timestamp()
 }
