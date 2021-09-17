@@ -49,10 +49,6 @@ func ParseLevel(levelStr string) (Level, error) {
 		return WarnLevel, nil
 	case levelFieldMarshalFunc(ErrorLevel):
 		return ErrorLevel, nil
-	case levelFieldMarshalFunc(FatalLevel):
-		return FatalLevel, nil
-	case levelFieldMarshalFunc(PanicLevel):
-		return PanicLevel, nil
 	case levelFieldMarshalFunc(NoLevel):
 		return NoLevel, nil
 	}
