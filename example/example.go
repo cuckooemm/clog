@@ -19,19 +19,18 @@ func main() {
 func writeLogFile() {
 
 	path := "./log/api.log"
-	//s := storage.NewSizeSplitFile(path).Backups(10).MaxSize(10).SaveTime(4).Compress(3).Finish()
-	s := storage.NewTimeSplitFile(path, time.Minute).Backups(3).SaveTime(3).Finish()
+	//s := storage.NewSizeSplitFile(path).Backups(10).MaxSize(50).SaveTime(4).Compress(3).Finish()
+	s := storage.NewTimeSplitFile(path, time.Minute).Backups(3).SaveTime(3).Compress(2).Finish()
 	defer s.Close()
 	clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Default()
 	clog.Set.SetBaseTimeDurationInteger()
-	defer s.Close()
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		gid := i
 		go func() {
 			for j := 0; j < 1000; j++ {
-				clog.Info().Int("goroutine id", gid).Int("idx", j).Str("msg", "suibian").Msg("dhad")
+				clog.Info().Int("goroutine id", gid).Int("idx", j).Str("msg", "foo").Msg("bar")
 				clog.Warn().TimeDur("timedur", time.Second*3+time.Minute*9).Cease()
 			}
 			wg.Done()
@@ -70,15 +69,15 @@ func changeLogLevel() {
 
 type SearchExample struct {
 	count int
-	log   clog.Logger
+	log   *clog.Logger
 }
 
 func newSearchExample() {
+	clog.NewOption().WithLogLevel(clog.InfoLevel).WithWriter(os.Stdout).Default()
 	example := SearchExample{
-		log: clog.NewOption().WithLogLevel(clog.InfoLevel).WithWriter(os.Stdout).Logger(),
+		log: clog.CopyDefault(),
 	}
 	example.log.ResetStrPrefix("searchId", time.Now().UnixNano())
-
 	example.log.Info().Interface("data", 1).Msg("")
 	example.log.Error().Interface("data", 1).Msg("")
 	example.log.Info().Interface("data", 1).Msg("")

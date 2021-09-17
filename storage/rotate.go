@@ -43,7 +43,9 @@ type SizeRotate struct {
 func (r *SizeRotate) Close() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	close(r.millCh)
+	if r.millCh != nil {
+		close(r.millCh)
+	}
 	_ = r.fd.Sync()
 	_ = r.fd.Close()
 }

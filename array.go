@@ -22,8 +22,7 @@ type Array struct {
 
 func putArray(a *Array) {
 	if cap(a.buf) > maxCap {
-		//return
-		a.buf = a.buf[:0:initCap]
+		return
 	}
 	arrayPool.Put(a)
 }
@@ -76,6 +75,11 @@ func (a *Array) Bytes(val []byte) *Array {
 // Hex append append the val as a hex string to the array.
 func (a *Array) Hex(val []byte) *Array {
 	a.buf = trs.AppendHex(trs.AppendArrayDelim(a.buf), val)
+	return a
+}
+
+func (a *Array) HexStr(val string) *Array {
+	a.buf = trs.AppendHex(trs.AppendArrayDelim(a.buf), []byte(val))
 	return a
 }
 

@@ -7,7 +7,7 @@ import (
 
 func TestFileWrite_Write(t *testing.T) {
 	var path = "./log/test.log"
-	storage := Opt.WithFile(path).Backups(5).Compress(7).MaxSize(10).SaveTime(30).Done()
+	storage := NewSizeSplitFile(path).Backups(5).Compress(7).MaxSize(10).SaveTime(30).Finish()
 	wg := &sync.WaitGroup{}
 	for gi := 0; gi < 100; gi++ {
 		wg.Add(1)
@@ -23,4 +23,5 @@ func TestFileWrite_Write(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+	storage.Close()
 }

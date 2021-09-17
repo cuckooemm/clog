@@ -23,16 +23,14 @@ type Event struct {
 	w     LevelWriter
 	level Level
 	done  func(msg string)
-	stack bool   // enable error stack trace
-	ch    []Hook // hooks from context
+	stack bool // 错误堆栈跟踪
+	hook  []Hook
 }
 
 type LogObjectMarshaler interface {
 	MarshalObject(e *Event)
 }
 
-// LogArrayMarshaler provides a strongly-typed and encoding-agnostic interface
-// to be implemented by types used with Event/Context's Array methods.
 type LogArrayMarshaler interface {
 	MarshalArray(a *Array)
 }
@@ -40,7 +38,7 @@ type LogArrayMarshaler interface {
 func newEvent(w LevelWriter, level Level) *Event {
 	e := eventPool.Get().(*Event)
 	e.buf = e.buf[:0]
-	e.ch = nil
+	e.hook = nil
 	e.buf = trs.AppendBeginMarker(e.buf)
 	e.w = w
 	e.level = level
@@ -50,8 +48,7 @@ func newEvent(w LevelWriter, level Level) *Event {
 
 func putEvent(e *Event) {
 	if cap(e.buf) > maxCap {
-		e.buf = e.buf[:0:initCap]
-		//return
+		return
 	}
 	eventPool.Put(e)
 }
@@ -77,7 +74,7 @@ func (e *Event) Enabled() bool {
 	return e != nil && e.level != Disabled
 }
 
-// Discard disables the event so Msg(f) won't print it.
+// Discard 关闭此条日志输出
 func (e *Event) Discard() *Event {
 	if e == nil {
 		return e
@@ -115,7 +112,7 @@ func (e *Event) Msgf(format string, v ...interface{}) {
 }
 
 func (e *Event) msg(msg string) {
-	for _, hook := range e.ch {
+	for _, hook := range e.hook {
 		hook.Run(e, e.level, msg)
 	}
 	if msg != "" {
@@ -248,12 +245,21 @@ func (e *Event) Bytes(key string, val []byte) *Event {
 	return e
 }
 
-// Hex adds the field key with val as a hex string to the *Event context.
+// Hex adds the field key with val as a hex []byte to the *Event context.
 func (e *Event) Hex(key string, val []byte) *Event {
 	if e == nil {
 		return e
 	}
 	e.buf = trs.AppendHex(trs.AppendKey(e.buf, key), val)
+	return e
+}
+
+// HexStr adds the field key with val as a hex string to the *Event context.
+func (e *Event) HexStr(key string, val string) *Event {
+	if e == nil {
+		return e
+	}
+	e.buf = trs.AppendHex(trs.AppendKey(e.buf, key), []byte(val))
 	return e
 }
 
@@ -456,7 +462,7 @@ func (e *Event) Int64(key string, i int64) *Event {
 	return e
 }
 
-// Int64s adds the field key with i as a []int64 to the *Event context.
+// Ints64 adds the field key with i as a []int64 to the *Event context.
 func (e *Event) Ints64(key string, i []int64) *Event {
 	if e == nil {
 		return e
@@ -613,7 +619,7 @@ func (e *Event) Time(key string, t time.Time) *Event {
 	return e
 }
 
-// Time adds the field key with t formated as string using clog.TimeFieldFormat.
+// TimeF the field key with t formated as string using clog.TimeFieldFormat.
 func (e *Event) TimeF(key string, t time.Time, format string) *Event {
 	if e == nil {
 		return e
