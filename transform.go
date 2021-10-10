@@ -13,7 +13,7 @@ type transform struct{}
 
 var trs = transform{}
 
-// AppendKey appends a new key to the output.
+// AppendKey 添加key到bytes.
 func (s transform) AppendKey(dst []byte, key string) []byte {
 	if dst[len(dst)-1] != '{' {
 		dst = append(dst, ',')
@@ -21,11 +21,7 @@ func (s transform) AppendKey(dst []byte, key string) []byte {
 	return append(s.AppendString(dst, key), ':')
 }
 
-// AppendHex encodes the input bytes to a hex string and appends
-// the encoded string to the input byte slice.
-//
-// The operation loops though each byte and encodes it as hex using
-// the hex lookup table.
+// AppendHex 以16进制形式添加[]byte到bytes.
 func (transform) AppendHex(dst, s []byte) []byte {
 	dst = append(dst, '"')
 	for _, v := range s {
@@ -34,7 +30,7 @@ func (transform) AppendHex(dst, s []byte) []byte {
 	return append(dst, '"')
 }
 
-// AppendBytes is a mirror of appendString with []byte arg
+// AppendBytes 等同于 appendString
 func (transform) AppendBytes(dst, s []byte) []byte {
 	dst = append(dst, '"')
 	for i := 0; i < len(s); i++ {
@@ -47,27 +43,27 @@ func (transform) AppendBytes(dst, s []byte) []byte {
 	return append(dst, '"')
 }
 
-// AppendBeginMarker inserts a map start into the dst byte array.
+// AppendBeginMarker 添加Json开始标记.
 func (transform) AppendBeginMarker(dst []byte) []byte {
 	return append(dst, '{')
 }
 
-// AppendEndMarker inserts a map end into the dst byte array.
+// AppendEndMarker 添加Json结束标记.
 func (transform) AppendEndMarker(dst []byte) []byte {
 	return append(dst, '}')
 }
 
-// AppendArrayStart adds markers to indicate the start of an array.
+// AppendArrayStart 添加数组开始标记.
 func (transform) AppendArrayStart(dst []byte) []byte {
 	return append(dst, '[')
 }
 
-// AppendArrayEnd adds markers to indicate the end of an array.
+// AppendArrayEnd 添加数组结束标记.
 func (transform) AppendArrayEnd(dst []byte) []byte {
 	return append(dst, ']')
 }
 
-// AppendArrayDelim adds markers to indicate end of a particular array element.
+// AppendArrayDelim 添加数组数据分隔符.
 func (transform) AppendArrayDelim(dst []byte) []byte {
 	if len(dst) > 0 {
 		return append(dst, ',')
@@ -75,19 +71,17 @@ func (transform) AppendArrayDelim(dst []byte) []byte {
 	return dst
 }
 
-// AppendLineBreak appends a line break.
+// AppendLineBreak 添加换行符.
 func (transform) AppendLineBreak(dst []byte) []byte {
 	return append(dst, '\n')
 }
 
-// AppendBool converts the input bool to a string and
-// appends the encoded string to the input byte slice.
+// AppendBool 转换bool为string至bytes.
 func (transform) AppendBool(dst []byte, val bool) []byte {
 	return strconv.AppendBool(dst, val)
 }
 
-// AppendBools encodes the input bools to json and
-// appends the encoded string list to the input byte slice.
+// AppendBools 添加[]bool为[]string至bytes.
 func (transform) AppendBools(dst []byte, vals []bool) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -103,14 +97,12 @@ func (transform) AppendBools(dst []byte, vals []bool) []byte {
 	return dst
 }
 
-// AppendInt converts the input int to a string and
-// appends the encoded string to the input byte slice.
+// AppendInt 添加int类型到bytes.
 func (transform) AppendInt(dst []byte, val int) []byte {
 	return strconv.AppendInt(dst, int64(val), 10)
 }
 
-// AppendInts encodes the input ints to json and
-// appends the encoded string list to the input byte slice.
+// AppendInts 添加[]int类型到bytes.
 func (transform) AppendInts(dst []byte, vals []int) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -126,14 +118,12 @@ func (transform) AppendInts(dst []byte, vals []int) []byte {
 	return dst
 }
 
-// AppendInt8 converts the input []int8 to a string and
-// appends the encoded string to the input byte slice.
+// AppendInt8 添加int8类型到bytes.
 func (transform) AppendInt8(dst []byte, val int8) []byte {
 	return strconv.AppendInt(dst, int64(val), 10)
 }
 
-// AppendInts8 encodes the input int8s to json and
-// appends the encoded string list to the input byte slice.
+// AppendInts8 添加[]int8类型到bytes.
 func (transform) AppendInts8(dst []byte, vals []int8) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -149,14 +139,12 @@ func (transform) AppendInts8(dst []byte, vals []int8) []byte {
 	return dst
 }
 
-// AppendInt16 converts the input int16 to a string and
-// appends the encoded string to the input byte slice.
+// AppendInt16 添加int16类型到bytes.
 func (transform) AppendInt16(dst []byte, val int16) []byte {
 	return strconv.AppendInt(dst, int64(val), 10)
 }
 
-// AppendInts16 encodes the input int16s to json and
-// appends the encoded string list to the input byte slice.
+// AppendInts16 添加[]int16类型到bytes.
 func (transform) AppendInts16(dst []byte, vals []int16) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -172,14 +160,12 @@ func (transform) AppendInts16(dst []byte, vals []int16) []byte {
 	return dst
 }
 
-// AppendInt32 converts the input int32 to a string and
-// appends the encoded string to the input byte slice.
+// AppendInt32 添加int32类型到bytes.
 func (transform) AppendInt32(dst []byte, val int32) []byte {
 	return strconv.AppendInt(dst, int64(val), 10)
 }
 
-// AppendInts32 encodes the input int32s to json and
-// appends the encoded string list to the input byte slice.
+// AppendInts32 添加[]int32类型到bytes.
 func (transform) AppendInts32(dst []byte, vals []int32) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -195,14 +181,12 @@ func (transform) AppendInts32(dst []byte, vals []int32) []byte {
 	return dst
 }
 
-// AppendInt64 converts the input int64 to a string and
-// appends the encoded string to the input byte slice.
+// AppendInt64 添加int64类型到bytes.
 func (transform) AppendInt64(dst []byte, val int64) []byte {
 	return strconv.AppendInt(dst, val, 10)
 }
 
-// AppendInts64 encodes the input int64s to json and
-// appends the encoded string list to the input byte slice.
+// AppendInts64 添加[]int64类型到bytes.
 func (transform) AppendInts64(dst []byte, vals []int64) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -218,14 +202,12 @@ func (transform) AppendInts64(dst []byte, vals []int64) []byte {
 	return dst
 }
 
-// AppendUint converts the input uint to a string and
-// appends the encoded string to the input byte slice.
+// AppendUint 添加uint类型到bytes.
 func (transform) AppendUint(dst []byte, val uint) []byte {
 	return strconv.AppendUint(dst, uint64(val), 10)
 }
 
-// AppendUints encodes the input uints to json and
-// appends the encoded string list to the input byte slice.
+// AppendUints 添加uint类型到bytes.
 func (transform) AppendUints(dst []byte, vals []uint) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -241,14 +223,12 @@ func (transform) AppendUints(dst []byte, vals []uint) []byte {
 	return dst
 }
 
-// AppendUint8 converts the input uint8 to a string and
-// appends the encoded string to the input byte slice.
+// AppendUint8 添加uint8类型到bytes.
 func (transform) AppendUint8(dst []byte, val uint8) []byte {
 	return strconv.AppendUint(dst, uint64(val), 10)
 }
 
-// AppendUints8 encodes the input uint8s to json and
-// appends the encoded string list to the input byte slice.
+// AppendUints8 添加[]uint8类型到bytes.
 func (transform) AppendUints8(dst []byte, vals []uint8) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -264,14 +244,12 @@ func (transform) AppendUints8(dst []byte, vals []uint8) []byte {
 	return dst
 }
 
-// AppendUint16 converts the input uint16 to a string and
-// appends the encoded string to the input byte slice.
+// AppendUint16 添加uint16类型到bytes.
 func (transform) AppendUint16(dst []byte, val uint16) []byte {
 	return strconv.AppendUint(dst, uint64(val), 10)
 }
 
-// AppendUints16 encodes the input uint16s to json and
-// appends the encoded string list to the input byte slice.
+// AppendUints16 添加[]uint16类型到bytes.
 func (transform) AppendUints16(dst []byte, vals []uint16) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -287,14 +265,12 @@ func (transform) AppendUints16(dst []byte, vals []uint16) []byte {
 	return dst
 }
 
-// AppendUint32 converts the input uint32 to a string and
-// appends the encoded string to the input byte slice.
+// AppendUint32 添加uint32类型到bytes.
 func (transform) AppendUint32(dst []byte, val uint32) []byte {
 	return strconv.AppendUint(dst, uint64(val), 10)
 }
 
-// AppendUints32 encodes the input uint32s to json and
-// appends the encoded string list to the input byte slice.
+// AppendUints32 添加[]uint32类型到bytes.
 func (transform) AppendUints32(dst []byte, vals []uint32) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -310,14 +286,12 @@ func (transform) AppendUints32(dst []byte, vals []uint32) []byte {
 	return dst
 }
 
-// AppendUint64 converts the input uint64 to a string and
-// appends the encoded string to the input byte slice.
+// AppendUint64 添加uint64类型到bytes.
 func (transform) AppendUint64(dst []byte, val uint64) []byte {
 	return strconv.AppendUint(dst, val, 10)
 }
 
-// AppendUints64 encodes the input uint64s to json and
-// appends the encoded string list to the input byte slice.
+// AppendUints64 添加[]uint64类型到bytes.
 func (transform) AppendUints64(dst []byte, vals []uint64) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -332,10 +306,8 @@ func (transform) AppendUints64(dst []byte, vals []uint64) []byte {
 	dst = append(dst, ']')
 	return dst
 }
+
 func appendFloat(dst []byte, val float64, bitSize int) []byte {
-	// JSON does not permit NaN or Infinity. A typical JSON encoder would fail
-	// with an error, but a logging library wants the data to get thru so we
-	// make a tradeoff and store those types as string.
 	switch {
 	case math.IsNaN(val):
 		return append(dst, `"NaN"`...)
@@ -347,14 +319,12 @@ func appendFloat(dst []byte, val float64, bitSize int) []byte {
 	return strconv.AppendFloat(dst, val, 'f', -1, bitSize)
 }
 
-// AppendFloat32 converts the input float32 to a string and
-// appends the encoded string to the input byte slice.
+// AppendFloat32 添加float32类型到bytes.
 func (transform) AppendFloat32(dst []byte, val float32) []byte {
 	return appendFloat(dst, float64(val), 32)
 }
 
-// AppendFloats32 encodes the input float32s to json and
-// appends the encoded string list to the input byte slice.
+// AppendFloats32 添加[]float32类型到bytes.
 func (transform) AppendFloats32(dst []byte, vals []float32) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -370,14 +340,12 @@ func (transform) AppendFloats32(dst []byte, vals []float32) []byte {
 	return dst
 }
 
-// AppendFloat64 converts the input float64 to a string and
-// appends the encoded string to the input byte slice.
+// AppendFloat64 添加float64类型到bytes.
 func (transform) AppendFloat64(dst []byte, val float64) []byte {
 	return appendFloat(dst, val, 64)
 }
 
-// AppendFloats64 encodes the input float64s to json and
-// appends the encoded string list to the input byte slice.
+// AppendFloats64 添加[]float64类型到bytes.
 func (transform) AppendFloats64(dst []byte, vals []float64) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')
@@ -393,6 +361,7 @@ func (transform) AppendFloats64(dst []byte, vals []float64) []byte {
 	return dst
 }
 
+// AppendInterface 添加interface{}类型到bytes.
 func (s transform) AppendInterface(dst []byte, i interface{}) []byte {
 	marshaled, err := json.Marshal(i)
 	if err != nil {
@@ -401,30 +370,23 @@ func (s transform) AppendInterface(dst []byte, i interface{}) []byte {
 	return append(dst, marshaled...)
 }
 
-// AppendIPAddr adds IPv4 or IPv6 address to dst.
+// AppendIPAddr 添加 IPv4 or IPv6地址到Slice.
 func (s transform) AppendIPAddr(dst []byte, ip net.IP) []byte {
 	return s.AppendString(dst, ip.String())
 }
 
-// AppendIPPrefix adds IPv4 or IPv6 Prefix (address & mask) to dst.
+// AppendIPPrefix 添加 IPv4 or IPv6 Prefix (address & mask)到slice.
 func (s transform) AppendIPPrefix(dst []byte, pfx net.IPNet) []byte {
 	return s.AppendString(dst, pfx.String())
 
 }
 
-// AppendMACAddr adds MAC address to dst.
+// AppendMACAddr 添加 MAC 硬件地址到Slice.
 func (s transform) AppendMACAddr(dst []byte, ha net.HardwareAddr) []byte {
 	return s.AppendString(dst, ha.String())
 }
 
-// AppendObjectData takes in an object that is already in a byte array
-// and adds it to the dst.
 func (transform) AppendObjectData(dst []byte, o []byte) []byte {
-	// Three conditions apply here:
-	// 1. new content starts with '{' - which should be dropped   OR
-	// 2. new content starts with '{' - which should be replaced with ','
-	//    to separate with existing content OR
-	// 3. existing content has already other fields
 	if o[0] == '{' {
 		if len(dst) > 1 {
 			dst = append(dst, ',')
@@ -458,7 +420,7 @@ func (transform) AppendString(dst []byte, s string) []byte {
 	return append(dst, '"')
 }
 
-// AppendNil inserts a 'Nil' object into the dst byte array.
+// AppendNil 添加`nil`类型到bytes.
 func (transform) AppendNil(dst []byte) []byte {
 	return append(dst, "null"...)
 }
@@ -480,7 +442,7 @@ func (s transform) AppendStrings(dst []byte, val []string) []byte {
 
 func (s transform) AppendTimes(dst []byte, val []time.Time, format string) []byte {
 	switch format {
-	case TimeFormatSec:
+	case TimeFormatUnixSec:
 		return appendUnixTimes(dst, val)
 	case TimeFormatUnixMs:
 		return appendUnixMsTimes(dst, val)

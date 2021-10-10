@@ -25,6 +25,8 @@ func (l Level) String() string {
 		return "panic"
 	case NoLevel:
 		return "nil"
+	case Disabled:
+		return "off"
 	}
 	return ""
 }
@@ -51,6 +53,8 @@ func ParseLevel(levelStr string) (Level, error) {
 		return ErrorLevel, nil
 	case levelFieldMarshalFunc(NoLevel):
 		return NoLevel, nil
+	case levelFieldMarshalFunc(Disabled):
+		return Disabled, nil
 	}
 	return NoLevel, fmt.Errorf("unknown Level String: '%s', defaulting to NoLevel", levelStr)
 }
@@ -77,56 +81,55 @@ func (l *Logger) AppendStrPrefix(key string, val interface{}) {
 	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
 }
 
-// GetLevel returns the current Level of l.
+// GetLevel 返回当前实例的日志等级.
 func (l Logger) GetLevel() Level {
 	return l.level
 }
 
-// Hook returns a logger with the h Hook.
+// Hook 向事件添加hook.
 func (l *Logger) Hook(h Hook) *Logger {
 	l.hooks = append(l.hooks, h)
 	return l
 }
 
-// Trace starts a new message with trace level.
+// Trace 开启一个trace等级的日志事件.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) Trace() *Event {
 	return l.newEvent(TraceLevel, nil)
 }
 
-// Debug starts a new message with debug level.
+// Debug 开启一个debug等级的日志事件.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) Debug() *Event {
 	return l.newEvent(DebugLevel, nil)
 }
 
-// Info starts a new message with info level.
+// Info 开启一个info等级的日志事件.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) Info() *Event {
 	return l.newEvent(InfoLevel, nil)
 }
 
-// Warn starts a new message with warn level.
+// Warn 开启一个warn等级的日志事件.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) Warn() *Event {
 	return l.newEvent(WarnLevel, nil)
 }
 
-// Error starts a new message with error level.
+// Error 开启一个error等级的日志事件.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) Error() *Event {
 	return l.newEvent(ErrorLevel, nil)
 }
 
-// Err starts a new message with error level with err as a field if not nil or
-// with info level if err is nil.
+// Err 根据传入的error判断开启的事件等级,如果err不为空,则设置事件等级为error，否则为info.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) Err(err error) *Event {
 	if err != nil {
 		return l.Error().Err(err)
@@ -135,27 +138,23 @@ func (l *Logger) Err(err error) *Event {
 	return l.Info()
 }
 
-// Fatal starts a new message with fatal level. The os.Exit(1) function
-// is called by the Msg method, which terminates the program immediately.
+// Fatal 开启一个Fatal等级的日志事件. 调用Msg完成事件是同时调用 os.Exit(1)函数并退出程序.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) Fatal() *Event {
 	return l.newEvent(FatalLevel, func(msg string) { os.Exit(1) })
 }
 
-// Panic starts a new message with panic level. The panic() function
-// is called by the Msg method, which stops the ordinary flow of a goroutine.
+// Panic 开启一个Panic等级的日志事件,且在完成事件时调用panic.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) Panic() *Event {
 	return l.newEvent(PanicLevel, func(msg string) { panic(msg) })
 }
 
-// WithLevel starts a new message with level. Unlike Fatal and Panic
-// methods, WithLevel does not terminate the program or stop the ordinary
-// flow of a gourotine when used with their respective levels.
+// WithLevel 根据传入的等级生成时间,如果传入panic,fatal等级,不会调用panic,os.exit等相关函数.
 //
-// You must call Msg on the returned event in order to send the event.
+// 必须调用Msg()方法完成此事件.
 func (l *Logger) WithLevel(level Level) *Event {
 	switch level {
 	case TraceLevel:
@@ -181,31 +180,29 @@ func (l *Logger) WithLevel(level Level) *Event {
 	}
 }
 
-// Log starts a new message with no level. Setting GlobalLevel to Disabled
+// Log 开启一个无等级的日志事件,输出中不会包含level等相关字段信息. Setting GlobalLevel to Disabled
 // will still disable events produced by this method.
-
 func (l *Logger) Log() *Event {
 	return l.newEvent(NoLevel, nil)
 }
 
-// Print sends a log event using debug level and no extra field.
-// Arguments are handled in the manner of fmt.Print.
+// Print 使用debug日志等级且不包含key形式输出.
+// 与 fmt.Print 参数相同.
 func (l *Logger) Print(v ...interface{}) {
-	if e := l.Debug(); e.Enabled() {
+	if e := l.Debug(); e.IsEnabled() {
 		e.Msg(fmt.Sprint(v...))
 	}
 }
 
-// Printf sends a log event using debug level and no extra field.
-// Arguments are handled in the manner of fmt.Printf.
+// Printf 使用debug日志等级且不包含key形式输出.
+// 与 fmt.Printf 参数相同.
 func (l *Logger) Printf(format string, v ...interface{}) {
-	if e := l.Debug(); e.Enabled() {
-		e.Msg(fmt.Sprintf(format, v...))
+	if e := l.Debug(); e.IsEnabled() {
+		e.Msgf(format, v...)
 	}
 }
 
-// Write implements the io.Writer interface. This is useful to set as a writer
-// for the standard library log.
+// Write 实现 io.Writer 接口.
 func (l Logger) Write(p []byte) (n int, err error) {
 	n = len(p)
 	if n > 0 && p[n-1] == '\n' {
@@ -220,7 +217,7 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 		return nil
 	}
 	e := newEvent(l.w, level)
-	if l.preStr != nil && len(l.preStr) > 0 {
+	if len(l.preStr) > 0 {
 		e.buf = append(e.buf, l.preStr...)
 	}
 	for _, hook := range l.preHook {
@@ -234,7 +231,7 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 	return e
 }
 
-// should returns true if the log event should be logged.
+// should 如果log等级小于实例等级或小于全局等级,则返回True.
 func (l Logger) should(lvl Level) bool {
 	if lvl < l.level || lvl < GlobalLevel() {
 		return false

@@ -68,9 +68,9 @@ func (e *Event) write() (err error) {
 	return
 }
 
-// Enabled return false if the *Event is going to be filtered out by
-// log level or sampling.
-func (e *Event) Enabled() bool {
+// IsEnabled 判断此次事件是否已被关闭 返回 true 则表示正常输出  false 则为已关闭输出
+// 返回true 并不代表一定输出， 还需看日志等级
+func (e *Event) IsEnabled() bool {
 	return e != nil && e.level != Disabled
 }
 
@@ -83,10 +83,9 @@ func (e *Event) Discard() *Event {
 	return nil
 }
 
-// Msg sends the *Event with msg added as the message field if not empty.
-//
-// NOTICE: once this method is called, the *Event should be disposed.
-// Calling Msg twice can have unexpected result.
+// Msg 输出日志 如果参数字段不为空字符串  则增加 messageFieldName 定义的field name
+// 调用后输出此次日志上下文数据
+// NOTICE: 此方法只能被调用一次，多次调用会引发意料之外的结果
 func (e *Event) Msg(msg string) {
 	if e == nil {
 		return
@@ -94,9 +93,7 @@ func (e *Event) Msg(msg string) {
 	e.msg(msg)
 }
 
-// Cease is equivalent to calling Msg("").
-//
-// NOTICE: once this method is called, the *Event should be disposed.
+// Cease 等同于调用Msg("")
 func (e *Event) Cease() {
 	if e == nil {
 		return
@@ -130,7 +127,7 @@ func (e *Event) msg(msg string) {
 	}
 }
 
-// Fields is a helper function to use a map to set fields using type assertion.
+// Fields 向事件上下文添加Map类型数据，
 func (e *Event) Fields(fields map[string]interface{}) *Event {
 	if e == nil {
 		return e
@@ -193,7 +190,7 @@ func (e *Event) Object(key string, obj LogObjectMarshaler) *Event {
 	return e
 }
 
-// EmbedObject marshals an object that implement the LogObjectMarshaler interface.
+// EmbedObject 序列化实现了 LogObjectMarshaler interface 的类型数据到事件上下文.
 func (e *Event) EmbedObject(obj LogObjectMarshaler) *Event {
 	if e == nil {
 		return e
@@ -202,7 +199,7 @@ func (e *Event) EmbedObject(obj LogObjectMarshaler) *Event {
 	return e
 }
 
-// Str adds the field key with val as a string to the *Event context.
+// Str 添加String类型数据到事件上下文.
 func (e *Event) Str(key, val string) *Event {
 	if e == nil {
 		return e
@@ -211,7 +208,7 @@ func (e *Event) Str(key, val string) *Event {
 	return e
 }
 
-// Strs adds the field key with vals as a []string to the *Event context.
+// Strs 添加[]String类型数据到事件上下文.
 func (e *Event) Strs(key string, vals []string) *Event {
 	if e == nil {
 		return e
@@ -220,7 +217,7 @@ func (e *Event) Strs(key string, vals []string) *Event {
 	return e
 }
 
-// Stringer adds the field key with val.String() (or null if val is nil) to the *Event context.
+// Stringer 添加实现`String()`接口的类型数据到事件上下文. 如果为nil 则输出 null.
 func (e *Event) Stringer(key string, val fmt.Stringer) *Event {
 	if e == nil {
 		return e
@@ -233,10 +230,12 @@ func (e *Event) Stringer(key string, val fmt.Stringer) *Event {
 	return e
 }
 
-// Bytes adds the field key with val as a string to the *Event context.
-//
-// Runes outside of normal ASCII ranges will be hex-encoded in the resulting
-// JSON.
+// Bytes 添加[]byte类型数据到事件上下文. 如果为nil 则输出空字符.
+//	Log.Bytes("bytes", []byte("bar")).Cease()
+// Output:
+//	{"bytes":"bar"}
+// NOTE:
+//	非ASCII字符将被16进制编码输出
 func (e *Event) Bytes(key string, val []byte) *Event {
 	if e == nil {
 		return e
@@ -245,7 +244,7 @@ func (e *Event) Bytes(key string, val []byte) *Event {
 	return e
 }
 
-// Hex adds the field key with val as a hex []byte to the *Event context.
+// Hex 添加以16进制编码的[]byte类型数据到事件上下文.
 func (e *Event) Hex(key string, val []byte) *Event {
 	if e == nil {
 		return e
@@ -254,7 +253,7 @@ func (e *Event) Hex(key string, val []byte) *Event {
 	return e
 }
 
-// HexStr adds the field key with val as a hex string to the *Event context.
+// HexStr 同Hex().
 func (e *Event) HexStr(key string, val string) *Event {
 	if e == nil {
 		return e
@@ -263,10 +262,12 @@ func (e *Event) HexStr(key string, val string) *Event {
 	return e
 }
 
-// RawJSON adds already encoded JSON to the log line under key.
-//
-// No sanity check is performed on b; it must not contain carriage returns and
-// be valid JSON.
+// RawJSON 添加原始JSON数据到事件上下文.
+//	Log().RawJSON(`{"some":"json"}`).Cease()
+// NOTE:
+// 		未对数据做Json格式校验
+// Output:
+//	{"some":"json"}
 func (e *Event) RawJSON(key string, b []byte) *Event {
 	if e == nil {
 		return e
@@ -275,8 +276,8 @@ func (e *Event) RawJSON(key string, b []byte) *Event {
 	return e
 }
 
-// AnErr adds the field key with serialized err to the *Event context.
-// If err is nil, no field is added.
+// AnErr 添加序列化后的error到事件上下文.
+// 如果err为nil，则field不会被添加.
 func (e *Event) AnErr(key string, err error) *Event {
 	if e == nil {
 		return e
@@ -299,8 +300,8 @@ func (e *Event) AnErr(key string, err error) *Event {
 	}
 }
 
-// Errs adds the field key with errs as an array of serialized errors to the
-// *Event context.
+// Errs 添加Err数组到事件上下文.
+// 通过clog.Set.ErrMarshalHandler(func)自定义err输出.
 func (e *Event) Errs(key string, errs []error) *Event {
 	if e == nil {
 		return e
@@ -318,18 +319,16 @@ func (e *Event) Errs(key string, errs []error) *Event {
 			arr = arr.Interface(m)
 		}
 	}
-
 	return e.Array(key, arr)
 }
 
-// Err adds the field "error" with serialized err to the *Event context.
-// If err is nil, no field is added.
+// Err 向时间上下文添加error信息，如果err为nil，则不添加field。
 //
-// To customize the key name, change clog.ErrorFieldName.
+// 通过clog.Set.FiledName().ErrorFieldName("")更改默认 field name.
 //
-// If Stack() has been called before and clog.ErrorStackMarshaler is defined,
-// the err is passed to ErrorStackMarshaler and the result is appended to the
-// clog.ErrorStackFieldName.
+// 如果在此之前调用了Stack()函数且通过clog.Set.ErrStackMarshal(func)定义了errorStackMarshal
+// 则错误通过errorStackMarshal将结果添加到事件上下文中.
+// 通过clog.Set.FiledName().ErrStackFieldName()更改默认 field name.
 func (e *Event) Err(err error) *Event {
 	if e == nil {
 		return e
@@ -352,9 +351,9 @@ func (e *Event) Err(err error) *Event {
 	return e.AnErr(errorFieldName, err)
 }
 
-// Stack enables stack trace printing for the error passed to Err().
+// Stack 为传递给Err()的错误开启堆栈打印跟踪.
 //
-// ErrorStackMarshaler must be set for this method to do something.
+// 通过设置clog.Set.ErrStackMarshal(func())使此方法打印某些操作.
 func (e *Event) Stack() *Event {
 	if e == nil {
 		return e
@@ -363,7 +362,10 @@ func (e *Event) Stack() *Event {
 	return e
 }
 
-// Bool adds the field key with val as a bool to the *Event context.
+// Bool 添加bool类型数据到事件上下文.
+// 		Log().Bool("true",true).Bool("false",false).Cease()
+// Output:
+//  	{"true":true,"false":false}
 func (e *Event) Bool(key string, b bool) *Event {
 	if e == nil {
 		return e
@@ -372,7 +374,10 @@ func (e *Event) Bool(key string, b bool) *Event {
 	return e
 }
 
-// Bools adds the field key with val as a []bool to the *Event context.
+// Bools 添加[]bool类型数据到事件上下文.
+//  	Log().Bools("bool",[]bool{true,false}).Cease()
+// Output:
+//  	{"bool":[true,false]}
 func (e *Event) Bools(key string, b []bool) *Event {
 	if e == nil {
 		return e
@@ -381,7 +386,10 @@ func (e *Event) Bools(key string, b []bool) *Event {
 	return e
 }
 
-// Int adds the field key with i as a int to the *Event context.
+// Int 添加int类型数据到事件上下文.
+//  	Log().Int("int",1).Cease()
+// Output:
+//  	{"int":1}
 func (e *Event) Int(key string, i int) *Event {
 	if e == nil {
 		return e
@@ -390,7 +398,10 @@ func (e *Event) Int(key string, i int) *Event {
 	return e
 }
 
-// Ints adds the field key with i as a []int to the *Event context.
+// Ints 添加[]int类型数据到事件上下文.
+//  	Log().Int("int",[]int{1,2,3}).Cease()
+// Output:
+//  	{"int":[1,2,3]]}
 func (e *Event) Ints(key string, i []int) *Event {
 	if e == nil {
 		return e
@@ -399,7 +410,7 @@ func (e *Event) Ints(key string, i []int) *Event {
 	return e
 }
 
-// Int8 adds the field key with i as a int8 to the *Event context.
+// Int8 添加int8类型数据到事件上下文.
 func (e *Event) Int8(key string, i int8) *Event {
 	if e == nil {
 		return e
@@ -408,7 +419,7 @@ func (e *Event) Int8(key string, i int8) *Event {
 	return e
 }
 
-// Ints8 adds the field key with i as a []int8 to the *Event context.
+// Ints8 添加[]int8类型数据到事件上下文.
 func (e *Event) Ints8(key string, i []int8) *Event {
 	if e == nil {
 		return e
@@ -417,7 +428,7 @@ func (e *Event) Ints8(key string, i []int8) *Event {
 	return e
 }
 
-// Int16 adds the field key with i as a int16 to the *Event context.
+// Int16 添加int16类型数据到事件上下文.
 func (e *Event) Int16(key string, i int16) *Event {
 	if e == nil {
 		return e
@@ -426,7 +437,7 @@ func (e *Event) Int16(key string, i int16) *Event {
 	return e
 }
 
-// Ints16 adds the field key with i as a []int16 to the *Event context.
+// Ints16 添加[]int16类型数据到事件上下文.
 func (e *Event) Ints16(key string, i []int16) *Event {
 	if e == nil {
 		return e
@@ -435,7 +446,7 @@ func (e *Event) Ints16(key string, i []int16) *Event {
 	return e
 }
 
-// Int32 adds the field key with i as a int32 to the *Event context.
+// Int32 添加int32类型数据到事件上下文.
 func (e *Event) Int32(key string, i int32) *Event {
 	if e == nil {
 		return e
@@ -444,7 +455,7 @@ func (e *Event) Int32(key string, i int32) *Event {
 	return e
 }
 
-// Ints32 adds the field key with i as a []int32 to the *Event context.
+// Ints32 添加[]int32类型数据到事件上下文.
 func (e *Event) Ints32(key string, i []int32) *Event {
 	if e == nil {
 		return e
@@ -453,7 +464,7 @@ func (e *Event) Ints32(key string, i []int32) *Event {
 	return e
 }
 
-// Int64 adds the field key with i as a int64 to the *Event context.
+// Int64 添加int64类型数据到事件上下文.
 func (e *Event) Int64(key string, i int64) *Event {
 	if e == nil {
 		return e
@@ -462,7 +473,7 @@ func (e *Event) Int64(key string, i int64) *Event {
 	return e
 }
 
-// Ints64 adds the field key with i as a []int64 to the *Event context.
+// Ints64 添加[]int64类型数据到事件上下文.
 func (e *Event) Ints64(key string, i []int64) *Event {
 	if e == nil {
 		return e
@@ -471,7 +482,7 @@ func (e *Event) Ints64(key string, i []int64) *Event {
 	return e
 }
 
-// Uint adds the field key with i as a uint to the *Event context.
+// Uint 添加uint类型数据到事件上下文.
 func (e *Event) Uint(key string, i uint) *Event {
 	if e == nil {
 		return e
@@ -480,7 +491,7 @@ func (e *Event) Uint(key string, i uint) *Event {
 	return e
 }
 
-// Uints adds the field key with i as a []int to the *Event context.
+// Uints 添加[]uint类型数据到事件上下文.
 func (e *Event) Uints(key string, i []uint) *Event {
 	if e == nil {
 		return e
@@ -489,7 +500,7 @@ func (e *Event) Uints(key string, i []uint) *Event {
 	return e
 }
 
-// Uint8 adds the field key with i as a uint8 to the *Event context.
+// Uint8 添加uint8类型数据到事件上下文.
 func (e *Event) Uint8(key string, i uint8) *Event {
 	if e == nil {
 		return e
@@ -498,7 +509,7 @@ func (e *Event) Uint8(key string, i uint8) *Event {
 	return e
 }
 
-// Uints8 adds the field key with i as a []int8 to the *Event context.
+// Uints8 添加[]uint8类型数据到事件上下文.
 func (e *Event) Uints8(key string, i []uint8) *Event {
 	if e == nil {
 		return e
@@ -507,7 +518,7 @@ func (e *Event) Uints8(key string, i []uint8) *Event {
 	return e
 }
 
-// Uint16 adds the field key with i as a uint16 to the *Event context.
+// Uint16 添加uint16类型数据到事件上下文.
 func (e *Event) Uint16(key string, i uint16) *Event {
 	if e == nil {
 		return e
@@ -516,7 +527,7 @@ func (e *Event) Uint16(key string, i uint16) *Event {
 	return e
 }
 
-// Uints16 adds the field key with i as a []int16 to the *Event context.
+// Uints16 添加[]uint16类型数据到事件上下文.
 func (e *Event) Uints16(key string, i []uint16) *Event {
 	if e == nil {
 		return e
@@ -525,7 +536,7 @@ func (e *Event) Uints16(key string, i []uint16) *Event {
 	return e
 }
 
-// Uint32 adds the field key with i as a uint32 to the *Event context.
+// Uint32 添加uint32类型数据到事件上下文.
 func (e *Event) Uint32(key string, i uint32) *Event {
 	if e == nil {
 		return e
@@ -534,7 +545,7 @@ func (e *Event) Uint32(key string, i uint32) *Event {
 	return e
 }
 
-// Uints32 adds the field key with i as a []int32 to the *Event context.
+// Uints32 添加[]uint32类型数据到事件上下文.
 func (e *Event) Uints32(key string, i []uint32) *Event {
 	if e == nil {
 		return e
@@ -543,7 +554,7 @@ func (e *Event) Uints32(key string, i []uint32) *Event {
 	return e
 }
 
-// Uint64 adds the field key with i as a uint64 to the *Event context.
+// Uint64 添加uint64类型数据到事件上下文.
 func (e *Event) Uint64(key string, i uint64) *Event {
 	if e == nil {
 		return e
@@ -552,7 +563,7 @@ func (e *Event) Uint64(key string, i uint64) *Event {
 	return e
 }
 
-// Uints64 adds the field key with i as a []int64 to the *Event context.
+// Uints64 添加[]uint64类型数据到事件上下文.
 func (e *Event) Uints64(key string, i []uint64) *Event {
 	if e == nil {
 		return e
@@ -561,7 +572,7 @@ func (e *Event) Uints64(key string, i []uint64) *Event {
 	return e
 }
 
-// Float32 adds the field key with f as a float32 to the *Event context.
+// Float32 添加Float32类型数据到事件上下文.
 func (e *Event) Float32(key string, f float32) *Event {
 	if e == nil {
 		return e
@@ -570,7 +581,7 @@ func (e *Event) Float32(key string, f float32) *Event {
 	return e
 }
 
-// Floats32 adds the field key with f as a []float32 to the *Event context.
+// Floats32 添加[]Float32类型数据到事件上下文.
 func (e *Event) Floats32(key string, f []float32) *Event {
 	if e == nil {
 		return e
@@ -579,7 +590,7 @@ func (e *Event) Floats32(key string, f []float32) *Event {
 	return e
 }
 
-// Float64 adds the field key with f as a float64 to the *Event context.
+// Float64 添加Float64类型数据到事件上下文.
 func (e *Event) Float64(key string, f float64) *Event {
 	if e == nil {
 		return e
@@ -588,7 +599,7 @@ func (e *Event) Float64(key string, f float64) *Event {
 	return e
 }
 
-// Floats64 adds the field key with f as a []float64 to the *Event context.
+// Floats64 添加Float64类型数据到事件上下文.
 func (e *Event) Floats64(key string, f []float64) *Event {
 	if e == nil {
 		return e
@@ -597,11 +608,17 @@ func (e *Event) Floats64(key string, f []float64) *Event {
 	return e
 }
 
-// Timestamp adds the current local time as UNIX timestamp to the *Event context with the "time" key.
-// To customize the key name, change clog.TimestampFieldName.
+// Timestamp 添加时间数据到事件上下文.
+// 通过clog.Set.FiledName().TimestampFieldName()更改timestampFieldName. 函数等同于调用Time("time",time.Now())
+// 通过clog.Set.TimeFormat(timeLayout)更改timeLayoutFormat以自定义默认时间格式
 //
-// NOTE: It won't dedupe the "time" key if the *Event (or *Context) has one
-// already.
+//  	Log().Timestamp().Cease()
+//  	Log().Timestamp().Timestamp().Cease()
+// NOTE:
+//	函数调用多次并不会对结果去重
+// Output:
+//      {"time":"2006-01-02T15:04:05+08:00"}
+//      {"time":"2006-01-02T15:04:05+08:00","time":"2006-01-02T15:04:05+08:00"}
 func (e *Event) Timestamp() *Event {
 	if e == nil {
 		return e
@@ -610,7 +627,11 @@ func (e *Event) Timestamp() *Event {
 	return e
 }
 
-// Time adds the field key with t formated as string using clog.TimeFieldFormat.
+// Time 添加time类型数据到事件上下文.
+// 更改timeLayoutFormat以自定义默认时间格式
+//  	Log().Time("t",time.Now()).Cease()
+// Output:
+//  	{"t":"2006-01-02T15:04:05+08:00"}
 func (e *Event) Time(key string, t time.Time) *Event {
 	if e == nil {
 		return e
@@ -619,7 +640,10 @@ func (e *Event) Time(key string, t time.Time) *Event {
 	return e
 }
 
-// TimeF the field key with t formated as string using clog.TimeFieldFormat.
+// TimeF 添加time类型自定义时间格式数据到事件上下文.
+//  	Log().TimeF("x",time.Now(),time.RFC822Z).Cease()
+// Output:
+//  	{"x":"02 Jan 06 15:04 -0700"}
 func (e *Event) TimeF(key string, t time.Time, format string) *Event {
 	if e == nil {
 		return e
@@ -628,7 +652,7 @@ func (e *Event) TimeF(key string, t time.Time, format string) *Event {
 	return e
 }
 
-// Times adds the field key with t formated as string using clog.TimeFieldFormat.
+// Times 添加[]time类型数据到事件上下文，同Time().
 func (e *Event) Times(key string, t []time.Time) *Event {
 	if e == nil {
 		return e
@@ -637,9 +661,16 @@ func (e *Event) Times(key string, t []time.Time) *Event {
 	return e
 }
 
-// TimeDur adds the field key with duration d stored as clog.DurationFieldUnit.
-// If clog.DurationFieldInteger is true, durations are rendered as integer
-// instead of float.
+// TimeDur 添加time.Duration类型数据事件上下文. 默认以毫秒(ms)为单位，输出float类型数据
+// clog.Set.BaseTimeDurationInteger() 设置以整数类型输出
+//	Log().TimeDur("dur",time.Second + 300 * time.Millisecond + 300 * time.Microsecond).Cease()
+//	clog.Set.BaseTimeDurationInteger().BaseTimeDurationUnit(time.Microsecond)
+//	Log().TimeDur("dur",time.Second + 300 * time.Millisecond + 300 * time.Microsecond).Cease()
+// Output:
+// 	{"dur":1300.3}
+//	{"dur":1300300}
+// NOTE:
+//	Set.BaseTimeDurationInteger()与Set.BaseTimeDurationUnit()函数非线程安全，仅在初始化时使用
 func (e *Event) TimeDur(key string, d time.Duration) *Event {
 	if e == nil {
 		return e
@@ -648,9 +679,7 @@ func (e *Event) TimeDur(key string, d time.Duration) *Event {
 	return e
 }
 
-// TimeDurs adds the field key with duration d stored as clog.DurationFieldUnit.
-// If clog.DurationFieldInteger is true, durations are rendered as integer
-// instead of float.
+// TimeDurs 添加[]time.Duration类型数据到事件上下文，同TimeDur.
 func (e *Event) TimeDurs(key string, d []time.Duration) *Event {
 	if e == nil {
 		return e
@@ -659,22 +688,46 @@ func (e *Event) TimeDurs(key string, d []time.Duration) *Event {
 	return e
 }
 
-// TimeDiff adds the field key with positive duration between time t and start.
-// If time t is not greater than start, duration will be 0.
-// Duration format follows the same principle as Dur().
-func (e *Event) TimeDiff(key string, t time.Time, start time.Time) *Event {
+// TimeDurStr 添加[]Time.Duration类型数据到事件上下文,输出String类型.
+//	Log().TimeDurStr("dur",time.Second + 300 * time.Millisecond + 300 * time.Microsecond).Cease()
+// Output:
+//	{"dur":"1.3003s"}
+func (e *Event) TimeDurStr(key string, d time.Duration) *Event {
 	if e == nil {
 		return e
 	}
-	var d time.Duration
-	if t.After(start) {
-		d = t.Sub(start)
-	}
-	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), d)
+	e.buf = trs.AppendString(trs.AppendKey(e.buf, key), d.String())
 	return e
 }
 
-// Interface adds the field key with i marshaled using reflection.
+// TimeDiff 添加start(param1)和end(param2)时间差值到事件上下文,输出格式与单位同TimeDur().
+//
+// 如果 start < end 则输出正数，反之为负数
+//	t1 := time.Date(2021, 9, 28, 12, 23, 22, 0, time.Local)
+//	t2 := time.Date(2021, 9, 28, 12, 24, 44, 0, time.Local)
+//	Log().TimeDiff("dur",t1,t2).Cease()
+// Output:
+//	{"t":82000}
+func (e *Event) TimeDiff(key string, start time.Time, end time.Time) *Event {
+	if e == nil {
+		return e
+	}
+	e.buf = trs.AppendDuration(trs.AppendKey(e.buf, key), end.Sub(start))
+	return e
+}
+
+// TimeDiffStr 添加start(param1)和end(param2)时间差值到事件上下文,同TimeDiff(); 输出格式与单位同TimeDurStr().
+func (e *Event) TimeDiffStr(key string, start time.Time, end time.Time) *Event {
+	if e == nil {
+		return e
+	}
+	e.buf = trs.AppendString(trs.AppendKey(e.buf, key), end.Sub(start).String())
+	return e
+}
+
+// Interface 添加interface{}类型数据到事件上下文.
+//
+// 如果实现了 LogObjectMarshaler{}接口的MarshalObject(e *Event)方法，则使用序列化方法，否则使用jsonEncode.
 func (e *Event) Interface(key string, i interface{}) *Event {
 	if e == nil {
 		return e
@@ -686,9 +739,8 @@ func (e *Event) Interface(key string, i interface{}) *Event {
 	return e
 }
 
-// Caller adds the file:line of the caller with the clog.CallerFieldName key.
-// The argument skip is the number of stack frames to ascend
-// Skip If not passed, use the global variable CallerSkipFrameCount
+// Caller 添加函数调用文件与行号信息到事件上下文.
+// 通过 clog.Set.FiledName().CallerFieldName("")更改默认field name.
 func (e *Event) Caller(skip ...int) *Event {
 	sk := callerSkipFrameCount
 	if len(skip) > 0 {
@@ -709,7 +761,7 @@ func (e *Event) caller(skip int) *Event {
 	return e
 }
 
-// IPAddr adds IPv4 or IPv6 Address to the event
+// IPAddr 添加 IPv4 or IPv6 地址到事件上下文.
 func (e *Event) IPAddr(key string, ip net.IP) *Event {
 	if e == nil {
 		return e
@@ -718,7 +770,7 @@ func (e *Event) IPAddr(key string, ip net.IP) *Event {
 	return e
 }
 
-// IPPrefix adds IPv4 or IPv6 Prefix (address and mask) to the event
+// IPPrefix 添加 IPv4 or IPv6 Prefix (address and mask) 到事件上下文.
 func (e *Event) IPPrefix(key string, pfx net.IPNet) *Event {
 	if e == nil {
 		return e
@@ -727,7 +779,7 @@ func (e *Event) IPPrefix(key string, pfx net.IPNet) *Event {
 	return e
 }
 
-// MACAddr adds MAC address to the event
+// MACAddr 添加 MAC 地址到事件上下文.
 func (e *Event) MACAddr(key string, ha net.HardwareAddr) *Event {
 	if e == nil {
 		return e

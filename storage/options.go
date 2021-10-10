@@ -14,6 +14,7 @@ type sizeRotateOption struct {
 	sizeRotate *SizeRotate
 }
 
+// NewTimeSplitFile 根据时间切分文件
 func NewTimeSplitFile(path string, interval time.Duration) *timeRotateOption {
 	f := new(timeRotateOption)
 	f.timeRotate = &TimeRotate{
@@ -42,19 +43,19 @@ func NewTimeSplitFile(path string, interval time.Duration) *timeRotateOption {
 	return f
 }
 
-// SetBackups 设置最大保存数量
+// Backups 设置最大保存数量,达到阈值根据时间戳删除旧文件
 func (t *timeRotateOption) Backups(backups int) *timeRotateOption {
 	t.timeRotate.maxBackups = backups
 	return t
 }
 
-// SetDays 设置最大保存天数
+// SaveTime 设置文件保存时间,单位天
 func (t *timeRotateOption) SaveTime(day int) *timeRotateOption {
 	t.timeRotate.saveDay = day
 	return t
 }
 
-// SetCompress 压缩n天前的日志
+// Compress 开启并压缩n天前的日志
 func (t *timeRotateOption) Compress(day int) *timeRotateOption {
 	if day > 0 {
 		if t.timeRotate.saveDay > 0 && t.timeRotate.saveDay < day {
@@ -66,6 +67,7 @@ func (t *timeRotateOption) Compress(day int) *timeRotateOption {
 	return t
 }
 
+// Finish 返回io.Writer实例
 func (t *timeRotateOption) Finish() *TimeRotate {
 	if err := t.timeRotate.firstOpenExistOrNew(); err != nil {
 		panic(err)
@@ -75,6 +77,7 @@ func (t *timeRotateOption) Finish() *TimeRotate {
 	return t.timeRotate
 }
 
+// NewSizeSplitFile 按文件大小分隔
 func NewSizeSplitFile(path string) *sizeRotateOption {
 	var o = new(sizeRotateOption)
 	o.sizeRotate = &SizeRotate{
@@ -89,26 +92,25 @@ func NewSizeSplitFile(path string) *sizeRotateOption {
 	return o
 }
 
-// MaxSize Mb
+// MaxSize 设置文件大小上限,单位Mb
 func (o *sizeRotateOption) MaxSize(m int) *sizeRotateOption {
 	o.sizeRotate.maxSize = m * (1 << 20)
 	return o
 }
 
-// Maximum file line
+// MaxLine 设置文件行数上限
 func (o *sizeRotateOption) MaxLine(line int) *sizeRotateOption {
 	o.sizeRotate.maxLine = line
 	return o
 }
 
-// SaveTime day
+// SaveTime 设置日志保存天数,单位天
 func (o *sizeRotateOption) SaveTime(day int) *sizeRotateOption {
 	o.sizeRotate.saveDay = day
 	return o
 }
 
-// 开启压缩
-// day 天后日志开始压缩
+// Compress 开始并设置压缩n天前的文件
 func (o *sizeRotateOption) Compress(day int) *sizeRotateOption {
 	if day > 0 {
 		if o.sizeRotate.saveDay > 0 && o.sizeRotate.saveDay < day {
@@ -120,12 +122,13 @@ func (o *sizeRotateOption) Compress(day int) *sizeRotateOption {
 	return o
 }
 
-// 最多保存文件数量
+// Backups 设置文件保存数量上限,达到阈值后根据时间删除旧文件
 func (o *sizeRotateOption) Backups(total int) *sizeRotateOption {
 	o.sizeRotate.maxBackups = total
 	return o
 }
 
+// Finish 返回is.Writer实例
 func (o *sizeRotateOption) Finish() *SizeRotate {
 	if o.sizeRotate.saveDay > 0 || o.sizeRotate.compress || o.sizeRotate.maxBackups > 0 {
 		o.sizeRotate.millCh = make(chan struct{}, 1)
