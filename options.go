@@ -24,17 +24,19 @@ type options struct {
 	preHooks []Hook
 }
 
-// 添加 Hook
+// WithHook 添加Hook函数
 func (o *options) WithHook(hook ...Hook) *options {
 	o.hooks = append(o.hooks, hook...)
 	return o
 }
 
+// WithPreHook 添加前置Hook函数,
 func (o *options) WithPreHook(hook ...Hook) *options {
 	o.preHooks = append(o.hooks, hook...)
 	return o
 }
 
+// WithWriter 为日志设置输出源
 func (o *options) WithWriter(w io.Writer) *options {
 	if w == nil {
 		w = os.Stderr
@@ -47,16 +49,19 @@ func (o *options) WithWriter(w io.Writer) *options {
 	return o
 }
 
+// WithLogLevel 设置日志等级
 func (o *options) WithLogLevel(lvl Level) *options {
 	o.level = lvl
 	return o
 }
 
+// WithTimestamp 添加前置TimestampHook函数
 func (o *options) WithTimestamp() *options {
 	o.preHooks = append(o.hooks, stp)
 	return o
 }
 
+// Default 生成全局实例 调用clog.Log*前需初始化全局实例
 func (o *options) Default() {
 	if clog != nil {
 		panic("The default function can only be called once")
@@ -79,72 +84,108 @@ func (o *options) Logger() Logger {
 	return log
 }
 
-func (s setting) SetTimeFormat(layout string) setting {
+func (s setting) TimeFormat(layout string) setting {
+	if len(layout) == 0 {
+		return s
+	}
 	timeLayoutFormat = layout
 	return s
 }
-func (s setting) SetErrHandler(f func(err error)) setting {
+func (s setting) ErrHandler(f func(err error)) setting {
 	errorHandler = f
 	return s
 }
-func (s setting) SetErrMarshalHandler(f func(err error) interface{}) setting {
+func (s setting) ErrMarshalHandler(f func(err error) interface{}) setting {
+	if f == nil {
+		return s
+	}
 	errorMarshalFunc = f
 	return s
 }
-func (s setting) SetLevelFieldToString(f func(l Level) string) setting {
+func (s setting) LevelFieldToString(f func(l Level) string) setting {
+	if f == nil {
+		return s
+	}
 	levelFieldMarshalFunc = f
 	return s
 
 }
-func (s setting) SetTimestampFunc(f func() time.Time) setting {
+func (s setting) TimestampFunc(f func() time.Time) setting {
+	if f == nil {
+		return s
+	}
 	timestampFunc = f
 	return s
 }
-func (s setting) SetErrStackMarshal(f func(err error) interface{}) setting {
+func (s setting) ErrStackMarshal(f func(err error) interface{}) setting {
 	errorStackMarshal = f
 	return s
 }
-func (s setting) SetBaseTimeDurationUnit(d time.Duration) setting {
+func (s setting) BaseTimeDurationUnit(d time.Duration) setting {
+	if d == 0 {
+		return s
+	}
 	durationFieldUnit = d
 	return s
 }
-func (s setting) SetBaseTimeDurationInteger() setting {
+func (s setting) BaseTimeDurationInteger() setting {
 	durationFieldInteger = true
 	return s
 }
-func (s setting) SetCallMarshalFunc(f func(file string, line int) string) setting {
+func (s setting) CallMarshalFunc(f func(file string, line int) string) setting {
+	if f == nil {
+		return s
+	}
 	callerMarshalFunc = f
 	return s
 }
-func (s setting) SetCallerSkipFrameCount(n int) setting {
+func (s setting) CallerSkipFrameCount(n int) setting {
 	callerSkipFrameCount = n
 	return s
 }
 
-func (s setting) SetFiledName() field {
+func (s setting) FiledName() field {
 	return field{}
 }
-func (f field) SetLevelFieldName(field string) field {
+func (f field) LevelFieldName(field string) field {
+	if len(field) == 0 {
+		return f
+	}
 	levelFieldName = field
 	return f
 }
-func (f field) SetTimestampFieldName(field string) field {
+func (f field) TimestampFieldName(field string) field {
+	if len(field) == 0 {
+		return f
+	}
 	timestampFieldName = field
 	return f
 }
-func (f field) SetErrorFieldName(field string) field {
+func (f field) ErrorFieldName(field string) field {
+	if len(field) == 0 {
+		return f
+	}
 	errorFieldName = field
 	return f
 }
-func (f field) SetErrStackFieldName(field string) field {
+func (f field) ErrStackFieldName(field string) field {
+	if len(field) == 0 {
+		return f
+	}
 	errorStackFieldName = field
 	return f
 }
-func (f field) SetMessageFieldName(field string) field {
+func (f field) MessageFieldName(field string) field {
+	if len(field) == 0 {
+		return f
+	}
 	messageFieldName = field
 	return f
 }
-func (f field) SetCallerFieldName(field string) field {
+func (f field) CallerFieldName(field string) field {
+	if len(field) == 0 {
+		return f
+	}
 	callerFieldName = field
 	return f
 }

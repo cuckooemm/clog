@@ -5,17 +5,16 @@ import (
 	"time"
 )
 
+// TimeFormatUnixSec, TimeFormatUnixMs or TimeFormatUnixMicro, 格式化时间为秒,毫秒,微妙时间戳
 const (
-	TimeFormatSec       = ""
+	TimeFormatUnixSec   = ""
 	TimeFormatUnixMs    = "UNIXMS"
 	TimeFormatUnixMicro = "UNIXMICRO"
 )
 
-// AppendTime formats the input time with the given format
-// and appends the encoded string to the input byte slice.
 func (s transform) AppendTime(dst []byte, t time.Time, format string) []byte {
 	switch format {
-	case TimeFormatSec:
+	case TimeFormatUnixSec:
 		return s.AppendInt64(dst, t.Unix())
 	case TimeFormatUnixMs:
 		return s.AppendInt64(dst, t.UnixNano()/1e6)
@@ -25,8 +24,6 @@ func (s transform) AppendTime(dst []byte, t time.Time, format string) []byte {
 	return append(t.AppendFormat(append(dst, '"'), format), '"')
 }
 
-// AppendDuration formats the input duration with the given unit & format
-// and appends the encoded string to the input byte slice.
 func (s transform) AppendDuration(dst []byte, d time.Duration) []byte {
 	if durationFieldInteger {
 		return strconv.AppendInt(dst, int64(d/durationFieldUnit), 10)
@@ -34,8 +31,6 @@ func (s transform) AppendDuration(dst []byte, d time.Duration) []byte {
 	return s.AppendFloat64(dst, float64(d)/float64(durationFieldUnit))
 }
 
-// AppendDurations formats the input durations with the given unit & format
-// and appends the encoded string list to the input byte slice.
 func (s transform) AppendDurations(dst []byte, vals []time.Duration) []byte {
 	if len(vals) == 0 {
 		return append(dst, '[', ']')

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	maxCap  = 1 << 12 // 4KiB
+	maxCap  = 1 << 14 // 16KiB
 	initCap = 1 << 9  // 512B
 )
 
@@ -15,24 +15,24 @@ const (
 type Level int8
 
 const (
-	// DebugLevel defines debug log level.
+	// DebugLevel debug 日志等级.
 	DebugLevel Level = iota
-	// InfoLevel defines info log level.
+	// InfoLevel info 日志等级.
 	InfoLevel
-	// WarnLevel defines warn log level.
+	// WarnLevel warn 日志等级.
 	WarnLevel
-	// ErrorLevel defines error log level.
+	// ErrorLevel error 日志等级.
 	ErrorLevel
-	// FatalLevel defines fatal log level.
+	// FatalLevel fatal 日志等级.
 	FatalLevel
-	// PanicLevel defines panic log level.
+	// PanicLevel panic 日志等级.
 	PanicLevel
-	// NoLevel defines an absent log level.
+	// NoLevel 缺省日志级别.
 	NoLevel
-	// Disabled disables the logger.
+	// Disabled 关闭log.
 	Disabled
 
-	// TraceLevel defines trace log level.
+	// TraceLevel trace 日志等级.
 	TraceLevel Level = -1
 )
 
@@ -43,23 +43,26 @@ func init() {
 var (
 	// 全局日志等级
 	gLevel = new(int32)
-	// TimeFieldFormat defines the time format of the Time field type. If set to
-	// TimeFormatUnix, TimeFormatUnixMs or TimeFormatUnixMicro, the time is formatted as an UNIX
-	// timestamp as integer.
+
+	// timeLayoutFormat 定义time字段日期格式
 	timeLayoutFormat = time.RFC3339
-	// LevelFieldName is the field name used for the level field.
+
+	// levelFieldName level字段输出key
 	levelFieldName = "level"
-	// TimestampFieldName is the field name used for the timestamp field.
+
+	// timestampFieldName Timestamp() 方法日期key
 	timestampFieldName = "time"
-	// ErrorFieldName is the field name used for error fields.
+	// errorFieldName 错误信息字段key Err()方法key
 	errorFieldName = "error"
-	// ErrorStackFieldName is the field name used for error stacks.
+	// errorStackFieldName 栈信息key
 	errorStackFieldName = "stack"
-	messageFieldName    = "message"
-	// CallerFieldName is the field name used for caller field.
+
+	// messageFieldName Msg()方法key
+	messageFieldName = "message"
+	// callerFieldName caller()方法key
 	callerFieldName = "caller"
-	// ErrorHandler 当向输出源写入数据时遇到错误，此方法调用，默认输出至stderr.
-	// 此方法必须为非阻塞且线程安全
+
+	// errorHandler 当向输出源写入数据时遇到错误，此方法调用，默认输出至stderr. 此方法必须为非阻塞且线程安全
 	errorHandler     func(err error)
 	errorMarshalFunc = func(err error) interface{} {
 		return err
@@ -67,38 +70,31 @@ var (
 	levelFieldMarshalFunc = func(l Level) string {
 		return l.String()
 	}
-	// timestampFunc defines the function called to generate a timestamp.
+	// timestampFunc 调用函数时生成时间的方法
 	timestampFunc = time.Now
-	// ErrorStackMarshal extract the stack from err if any.
+	// errorStackMarshal extract the stack from err if any.
 	errorStackMarshal func(err error) interface{}
 	// durationFieldUnit defines the unit for time.Duration type fields added
 	// timeDuration / durationFieldUnit
 	durationFieldUnit = time.Millisecond
 
-	// DurationFieldInteger renders Dur fields as integer instead of float if
-	// set to true.
+	// durationFieldInteger 为true则以整形输出时间戳
 	durationFieldInteger = false
 
 	callerMarshalFunc = func(file string, line int) string {
-		//if curPathIdx > 0 {
-		//	return "." + file[curPathIdx:] + ":" + strconv.Itoa(line)
-		//}
 		return file + ":" + strconv.Itoa(line)
 	}
 
-	// CallerSkipFrameCount is the number of stack frames to skip to find the caller.
+	// callerSkipFrameCount is the number of stack frames to skip to find the caller.
 	callerSkipFrameCount = 2
 )
 
-// SetGlobalLevel sets the global override for log level. If this
-// values is raised, all Loggers will use at least this value.
-//
-// To globally disable logs, set GlobalLevel to Disabled.
+// SetGlobalLevel 设置全局日志等级,通过此全局变量控制全局日志输出.
 func SetGlobalLevel(l Level) {
 	atomic.StoreInt32(gLevel, int32(l))
 }
 
-// GlobalLevel returns the current global log level
+// GlobalLevel 返回当前全局日志等级.
 func GlobalLevel() Level {
 	return Level(atomic.LoadInt32(gLevel))
 }

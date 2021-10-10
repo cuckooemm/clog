@@ -11,9 +11,9 @@ import (
 )
 
 func main() {
-	//changeLogLevel()
+	changeLogLevel()
 	//newSearchExample()
-	writeLogFile()
+	//writeLogFile()
 }
 
 func writeLogFile() {
@@ -23,7 +23,7 @@ func writeLogFile() {
 	s := storage.NewTimeSplitFile(path, time.Minute).Backups(3).SaveTime(3).Compress(2).Finish()
 	defer s.Close()
 	clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Default()
-	clog.Set.SetBaseTimeDurationInteger()
+	clog.Set.BaseTimeDurationInteger()
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
@@ -56,13 +56,14 @@ func changeLogLevel() {
 		}
 	}()
 	clog.NewOption().WithLogLevel(clog.TraceLevel).WithTimestamp().WithWriter(os.Stdout).Default()
-	clog.Set.SetBaseTimeDurationInteger()
+	clog.Set.BaseTimeDurationInteger()
 	for i := 0; i < 1000; i++ {
 		clog.Trace().Msg("trace")
 		clog.Debug().Msg("debug")
 		clog.Info().Msg("info")
 		clog.Warn().Msg("warn")
 		clog.Error().Msg("error")
+		clog.Log().Msg("log")
 		time.Sleep(time.Millisecond * 300)
 	}
 }

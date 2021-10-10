@@ -86,3 +86,29 @@
 	}
 ```
 即可通过`curl -X PUT http://url/path?level=info`方式动态修改程序日志等级
+
+
+[comment]: <> (### 方法列表)
+
+[comment]: <> ( - &#40;e *Event&#41; Discard&#40;&#41; // 关闭此次日志输出)
+
+[comment]: <> (```go)
+
+[comment]: <> (	event := clog.Info&#40;&#41;.Discard&#40;&#41;)
+
+[comment]: <> (	event.Msg&#40;"done"&#41; // 无输出)
+
+[comment]: <> (```)
+
+[comment]: <> ( - &#40;e *Event&#41; IsEnabled&#40;&#41; // 判断此次日志输出是否被关闭)
+
+[comment]: <> ( - &#40;e *Event&#41; Msg&#40;str string&#41; // 此方法只能被调用一次)
+
+[comment]: <> ( - &#40;e *Event&#41; Cease&#40;&#41; // 等同调用Msg&#40;""&#41;)
+
+[comment]: <> ( - &#40;e *Event&#41; Dict&#40;key string,&#41;)
+
+
+[comment]: <> (### 函数列表)
+
+[comment]: <> ( - Dict&#40;&#41; // 新建一个记录器，可通过&#40;e *Event&#41; Dict&#40;&#41; 方法包含输出此记录器数据)
