@@ -36,6 +36,28 @@ const (
 	TraceLevel Level = -1
 )
 
+func (l Level) String() string {
+	switch l {
+	case TraceLevel:
+		return "trace"
+	case DebugLevel:
+		return "debug"
+	case InfoLevel:
+		return "info"
+	case WarnLevel:
+		return "warn"
+	case ErrorLevel:
+		return "error"
+	case FatalLevel:
+		return "fatal"
+	case PanicLevel:
+		return "panic"
+	case NoLevel:
+		return "nil"
+	}
+	return ""
+}
+
 func init() {
 	*gLevel = -1
 }

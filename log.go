@@ -7,34 +7,9 @@ import (
 	"strconv"
 )
 
-func (l Level) String() string {
-	switch l {
-	case TraceLevel:
-		return "trace"
-	case DebugLevel:
-		return "debug"
-	case InfoLevel:
-		return "info"
-	case WarnLevel:
-		return "warn"
-	case ErrorLevel:
-		return "error"
-	case FatalLevel:
-		return "fatal"
-	case PanicLevel:
-		return "panic"
-	case NoLevel:
-		return "nil"
-	case Disabled:
-		return "off"
-	}
-	return ""
-}
-
 type Logger struct {
 	w       LevelWriter
 	level   Level
-	preStr  []byte
 	preHook []Hook
 	hooks   []Hook
 }
@@ -68,19 +43,6 @@ func (l *Logger) output(w io.Writer) {
 	l.w = lw
 }
 
-// ResetStrPrefix set prefix string
-func (l *Logger) ResetStrPrefix(key string, val interface{}) {
-	l.preStr = nil
-	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
-}
-
-func (l *Logger) AppendStrPrefix(key string, val interface{}) {
-	if len(l.preStr) > 0 {
-		l.preStr = append(l.preStr, ',')
-	}
-	l.preStr = trs.AppendInterface(append(trs.AppendString(l.preStr, key), ':'), val)
-}
-
 // GetLevel 返回当前实例的日志等级.
 func (l Logger) GetLevel() Level {
 	return l.level
@@ -93,42 +55,36 @@ func (l *Logger) Hook(h Hook) *Logger {
 }
 
 // Trace 开启一个trace等级的日志事件.
-//
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Trace() *Event {
 	return l.newEvent(TraceLevel, nil)
 }
 
 // Debug 开启一个debug等级的日志事件.
-//
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Debug() *Event {
 	return l.newEvent(DebugLevel, nil)
 }
 
 // Info 开启一个info等级的日志事件.
-//
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Info() *Event {
 	return l.newEvent(InfoLevel, nil)
 }
 
 // Warn 开启一个warn等级的日志事件.
-//
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Warn() *Event {
 	return l.newEvent(WarnLevel, nil)
 }
 
 // Error 开启一个error等级的日志事件.
-//
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Error() *Event {
 	return l.newEvent(ErrorLevel, nil)
 }
 
 // Err 根据传入的error判断开启的事件等级,如果err不为空,则设置事件等级为error，否则为info.
-//
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Err(err error) *Event {
 	if err != nil {
@@ -139,7 +95,6 @@ func (l *Logger) Err(err error) *Event {
 }
 
 // Fatal 开启一个Fatal等级的日志事件. 调用Msg完成事件是同时调用 os.Exit(1)函数并退出程序.
-//
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Fatal() *Event {
 	return l.newEvent(FatalLevel, func(msg string) { os.Exit(1) })
@@ -153,7 +108,6 @@ func (l *Logger) Panic() *Event {
 }
 
 // WithLevel 根据传入的等级生成时间,如果传入panic,fatal等级,不会调用panic,os.exit等相关函数.
-//
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) WithLevel(level Level) *Event {
 	switch level {
@@ -180,8 +134,8 @@ func (l *Logger) WithLevel(level Level) *Event {
 	}
 }
 
-// Log 开启一个无等级的日志事件,输出中不会包含level等相关字段信息. Setting GlobalLevel to Disabled
-// will still disable events produced by this method.
+// Log 开启一个无等级的日志事件,输出中不会包含level等相关字段信息.
+// 设置全局日志等级 GlobalLevel 为 Disabled 将禁用此方法产生的事件.
 func (l *Logger) Log() *Event {
 	return l.newEvent(NoLevel, nil)
 }
@@ -217,9 +171,6 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 		return nil
 	}
 	e := newEvent(l.w, level)
-	if len(l.preStr) > 0 {
-		e.buf = append(e.buf, l.preStr...)
-	}
 	for _, hook := range l.preHook {
 		hook.Run(e, level, "")
 	}

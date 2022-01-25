@@ -13,3 +13,12 @@ type timestampHook struct{}
 func (ts timestampHook) Run(e *Event, _ Level, _ string) {
 	e.Timestamp()
 }
+
+type TrackingHook struct {
+	Key string
+	Val string
+}
+
+func (t TrackingHook) Run(e *Event, _ Level, _ string) {
+	e.Str(t.Key, t.Val)
+}

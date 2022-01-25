@@ -17,7 +17,7 @@ var eventPool = &sync.Pool{
 	},
 }
 
-// Event 代表一个日志事件，由Level方法实例化，Msg完成。
+// Event 代表一个日志事件, 由Level方法实例化, Msg完成.
 type Event struct {
 	buf   []byte
 	w     LevelWriter

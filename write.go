@@ -5,8 +5,7 @@ import (
 	"sync"
 )
 
-// LevelWriter defines as interface a writer may implement in order
-// to receive level information with payload.
+// LevelWriter 定义接口 接收带有 Level 信息
 type LevelWriter interface {
 	io.Writer
 	WriteLevel(level Level, p []byte) (n int, err error)
@@ -38,6 +37,7 @@ func (s *syncWriter) Write(p []byte) (n int, err error) {
 	defer s.mu.Unlock()
 	return s.lw.Write(p)
 }
+
 // WriteLevel implements the LevelWriter interface.
 func (s *syncWriter) WriteLevel(l Level, p []byte) (n int, err error) {
 	s.mu.Lock()
@@ -77,9 +77,9 @@ func (t multiLevelWriter) WriteLevel(l Level, p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// MultiLevelWriter creates a writer that duplicates its writes to all the
-// provided writers, similar to the Unix tee(1) command. If some writers
-// implement LevelWriter, their WriteLevel method will be used instead of Write.
+// MultiLevelWriter 将写入复制到所提供的 Writer.
+// 类似于 UNIX tee(1) 命令.
+// 如果实现了 LevelWriter 接口, 则优先使用 WriteLevel 方法.
 func MultiLevelWriter(writers ...io.Writer) LevelWriter {
 	lwriters := make([]LevelWriter, 0, len(writers))
 	for _, w := range writers {

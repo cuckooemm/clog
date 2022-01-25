@@ -75,7 +75,7 @@ type SearchExample struct {
 }
 
 func newSearchExample() {
-	clog.NewOption().WithLogLevel(clog.InfoLevel).WithPreHook(clog.TracingHook{Key: "app", Val: "test"}).WithTimestamp().WithWriter(os.Stdout).Default()
+	clog.NewOption().WithLogLevel(clog.InfoLevel).WithPreHook(clog.TrackingHook{Key: "app", Val: "test"}).WithTimestamp().WithWriter(os.Stdout).Default()
 	example := SearchExample{
 		log: clog.CopyDefault(),
 	}

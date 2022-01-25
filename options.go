@@ -57,7 +57,7 @@ func (o *options) WithLogLevel(lvl Level) *options {
 
 // WithTimestamp 添加前置TimestampHook函数
 func (o *options) WithTimestamp() *options {
-	o.preHooks = append(o.hooks, stp)
+	o.preHooks = append(o.preHooks, stp)
 	return o
 }
 
@@ -71,7 +71,6 @@ func (o *options) Default() {
 	clog.preHook = append(clog.preHook, o.preHooks...)
 	clog.w = o.w
 	clog.level = o.level
-	clog.preStr = append(clog.preStr, o.prefix...)
 }
 
 func (o *options) Logger() Logger {
@@ -80,7 +79,6 @@ func (o *options) Logger() Logger {
 	log.preHook = append(log.preHook, o.preHooks...)
 	log.w = o.w
 	log.level = o.level
-	log.preStr = append(log.preStr, o.prefix...)
 	return log
 }
 
