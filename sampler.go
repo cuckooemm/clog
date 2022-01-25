@@ -85,15 +85,11 @@ func GetLevel() Level {
 	return clog.level
 }
 
-// 获取副本 继承默认Logger 的配置
+// CopyDefault 获取副本 继承默认Logger 的配置
 func CopyDefault() *Logger {
 	l := &Logger{
 		w:     clog.w,
 		level: clog.level,
-	}
-	if len(clog.preStr) > 0 {
-		l.preStr = make([]byte, len(clog.preStr))
-		copy(l.preStr, clog.preStr)
 	}
 	if len(clog.preHook) > 0 {
 		l.preHook = make([]Hook, len(clog.preHook))

@@ -1,18 +1,19 @@
 package main
 
 import (
-	"github.com/cuckooemm/clog"
-	"github.com/cuckooemm/clog/cloghttp"
-	"github.com/cuckooemm/clog/storage"
 	"net/http"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/cuckooemm/clog"
+	"github.com/cuckooemm/clog/cloghttp"
+	"github.com/cuckooemm/clog/storage"
 )
 
 func main() {
-	changeLogLevel()
-	//newSearchExample()
+	//changeLogLevel()
+	newSearchExample()
 	//writeLogFile()
 }
 
@@ -74,16 +75,14 @@ type SearchExample struct {
 }
 
 func newSearchExample() {
-	clog.NewOption().WithLogLevel(clog.InfoLevel).WithWriter(os.Stdout).Default()
+	clog.NewOption().WithLogLevel(clog.InfoLevel).WithPreHook(clog.TracingHook{Key: "app", Val: "test"}).WithTimestamp().WithWriter(os.Stdout).Default()
 	example := SearchExample{
 		log: clog.CopyDefault(),
 	}
-	example.log.ResetStrPrefix("searchId", time.Now().UnixNano())
-	example.log.Info().Interface("data", 1).Msg("")
-	example.log.Error().Interface("data", 1).Msg("")
-	example.log.Info().Interface("data", 1).Msg("")
-	example.log.AppendStrPrefix("sec", time.Now().UnixNano())
-	example.log.Info().Interface("data", 1).Msg("")
-	example.log.Info().Interface("data", 1).Msg("")
-	example.log.Info().Interface("data", 1).Msg("")
+	example.log.Info().Interface("data", 1).Msg("1")
+	example.log.Error().Interface("data", 1).Msg("2")
+	example.log.Info().Interface("data", 1).Msg("3")
+	example.log.Info().Interface("data", 1).Msg("4")
+	example.log.Info().Interface("data", 1).Msg("5")
+	example.log.Info().Interface("data", 1).Msg("6")
 }
