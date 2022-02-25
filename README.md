@@ -4,7 +4,7 @@
 
 
 ### Installation
-`go get -u https://github.com/cuckooemm/clog`
+`go get -u github.com/cuckooemm/clog`
 
 ### Getting Started
 
