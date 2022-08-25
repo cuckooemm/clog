@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/cuckooemm/clog"
+	"github.com/ethreads/clog"
 	"io"
 	"io/ioutil"
 	"os"

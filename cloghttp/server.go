@@ -2,7 +2,7 @@ package cloghttp
 
 import (
 	"fmt"
-	"github.com/cuckooemm/clog"
+	"github.com/ethreads/clog"
 	"net/http"
 )
 
@@ -27,7 +27,7 @@ func (handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	newLevel, err := clog.ParseLevel(levelStr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte("Support level [trace,debug,info,warn,error,nil].\r\n \t eg: curl -X PUT http://host:port/path?level=info\r\n"))
+		_, _ = w.Write([]byte("Support level [trace,debug,random,info,warn,error,nil].\r\n \t eg: curl -X PUT http://host:port/path?level=info\r\n"))
 		return
 	}
 	preLevel := clog.GlobalLevel()

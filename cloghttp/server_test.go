@@ -1,7 +1,7 @@
 package cloghttp
 
 import (
-	"github.com/cuckooemm/clog"
+	"github.com/ethreads/clog"
 	"net/http"
 	"testing"
 )

@@ -24,6 +24,13 @@ func Debug() *Event {
 	return clog.Debug()
 }
 
+// Random starts a new message with random level.
+//
+// You must call Msg on the returned event in order to send the event.
+func Random(seed int64) *Event {
+	return clog.Random(seed)
+}
+
 // Info starts a new message with info level.
 //
 // You must call Msg on the returned event in order to send the event.
@@ -88,8 +95,9 @@ func GetLevel() Level {
 // 获取副本 继承默认Logger 的配置
 func CopyDefault() *Logger {
 	l := &Logger{
-		w:     clog.w,
-		level: clog.level,
+		w:      clog.w,
+		level:  clog.level,
+		random: clog.random,
 	}
 	if len(clog.preStr) > 0 {
 		l.preStr = make([]byte, len(clog.preStr))

@@ -13,6 +13,8 @@ func (l Level) String() string {
 		return "trace"
 	case DebugLevel:
 		return "debug"
+	case RandomLevel:
+		return "random"
 	case InfoLevel:
 		return "info"
 	case WarnLevel:
@@ -34,6 +36,7 @@ func (l Level) String() string {
 type Logger struct {
 	w       LevelWriter
 	level   Level
+	random  int
 	preStr  []byte
 	preHook []Hook
 	hooks   []Hook
@@ -45,6 +48,8 @@ func ParseLevel(levelStr string) (Level, error) {
 		return TraceLevel, nil
 	case levelFieldMarshalFunc(DebugLevel):
 		return DebugLevel, nil
+	case levelFieldMarshalFunc(RandomLevel):
+		return RandomLevel, nil
 	case levelFieldMarshalFunc(InfoLevel):
 		return InfoLevel, nil
 	case levelFieldMarshalFunc(WarnLevel):
@@ -96,35 +101,42 @@ func (l *Logger) Hook(h Hook) *Logger {
 //
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Trace() *Event {
-	return l.newEvent(TraceLevel, nil)
+	return l.newEvent(TraceLevel, 0, nil)
 }
 
 // Debug 开启一个debug等级的日志事件.
 //
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Debug() *Event {
-	return l.newEvent(DebugLevel, nil)
+	return l.newEvent(DebugLevel, 0, nil)
+}
+
+// Random 开启一个Random等级的日志事件.
+//
+// 必须调用Msg()方法完成此事件.
+func (l *Logger) Random(seed int64) *Event {
+	return l.newEvent(RandomLevel, seed, nil)
 }
 
 // Info 开启一个info等级的日志事件.
 //
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Info() *Event {
-	return l.newEvent(InfoLevel, nil)
+	return l.newEvent(InfoLevel, 0, nil)
 }
 
 // Warn 开启一个warn等级的日志事件.
 //
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Warn() *Event {
-	return l.newEvent(WarnLevel, nil)
+	return l.newEvent(WarnLevel, 0, nil)
 }
 
 // Error 开启一个error等级的日志事件.
 //
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Error() *Event {
-	return l.newEvent(ErrorLevel, nil)
+	return l.newEvent(ErrorLevel, 0, nil)
 }
 
 // Err 根据传入的error判断开启的事件等级,如果err不为空,则设置事件等级为error，否则为info.
@@ -142,14 +154,14 @@ func (l *Logger) Err(err error) *Event {
 //
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Fatal() *Event {
-	return l.newEvent(FatalLevel, func(msg string) { os.Exit(1) })
+	return l.newEvent(FatalLevel, 0, func(msg string) { os.Exit(1) })
 }
 
 // Panic 开启一个Panic等级的日志事件,且在完成事件时调用panic.
 //
 // 必须调用Msg()方法完成此事件.
 func (l *Logger) Panic() *Event {
-	return l.newEvent(PanicLevel, func(msg string) { panic(msg) })
+	return l.newEvent(PanicLevel, 0, func(msg string) { panic(msg) })
 }
 
 // WithLevel 根据传入的等级生成时间,如果传入panic,fatal等级,不会调用panic,os.exit等相关函数.
@@ -168,9 +180,9 @@ func (l *Logger) WithLevel(level Level) *Event {
 	case ErrorLevel:
 		return l.Error()
 	case FatalLevel:
-		return l.newEvent(FatalLevel, nil)
+		return l.newEvent(FatalLevel, 0, nil)
 	case PanicLevel:
-		return l.newEvent(PanicLevel, nil)
+		return l.newEvent(PanicLevel, 0, nil)
 	case NoLevel:
 		return l.Log()
 	case Disabled:
@@ -183,7 +195,7 @@ func (l *Logger) WithLevel(level Level) *Event {
 // Log 开启一个无等级的日志事件,输出中不会包含level等相关字段信息. Setting GlobalLevel to Disabled
 // will still disable events produced by this method.
 func (l *Logger) Log() *Event {
-	return l.newEvent(NoLevel, nil)
+	return l.newEvent(NoLevel, 0, nil)
 }
 
 // Print 使用debug日志等级且不包含key形式输出.
@@ -212,8 +224,8 @@ func (l Logger) Write(p []byte) (n int, err error) {
 	return
 }
 
-func (l *Logger) newEvent(level Level, done func(string)) *Event {
-	if !l.should(level) {
+func (l *Logger) newEvent(level Level, seed int64, done func(string)) *Event {
+	if !l.Should(level, seed) {
 		return nil
 	}
 	e := newEvent(l.w, level)
@@ -231,10 +243,17 @@ func (l *Logger) newEvent(level Level, done func(string)) *Event {
 	return e
 }
 
-// should 如果log等级小于实例等级或小于全局等级,则返回True.
-func (l Logger) should(lvl Level) bool {
+// Should 如果log等级小于实例等级或小于全局等级,则返回True.
+func (l Logger) Should(lvl Level, seed int64) bool {
+
 	if lvl < l.level || lvl < GlobalLevel() {
+		if lvl == RandomLevel && abs(seed)%RandomLine < int64(l.random) {
+			return true
+		}
 		return false
+	}
+	if (lvl == l.level || lvl == GlobalLevel()) && lvl == RandomLevel && abs(seed)%RandomLine < int64(l.random) {
+		return true
 	}
 	return true
 }

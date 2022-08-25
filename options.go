@@ -16,8 +16,9 @@ func NewOption() *options {
 }
 
 type options struct {
-	w     LevelWriter
-	level Level
+	w      LevelWriter
+	level  Level
+	random int
 	// 回调函数
 	prefix   []byte
 	hooks    []Hook
@@ -55,6 +56,12 @@ func (o *options) WithLogLevel(lvl Level) *options {
 	return o
 }
 
+// WithRandom 设置随机采样的比例[0, 10000]
+func (o *options) WithRandom(rd int) *options {
+	o.random = rd
+	return o
+}
+
 // WithTimestamp 添加前置TimestampHook函数
 func (o *options) WithTimestamp() *options {
 	o.preHooks = append(o.hooks, stp)
@@ -71,6 +78,7 @@ func (o *options) Default() {
 	clog.preHook = append(clog.preHook, o.preHooks...)
 	clog.w = o.w
 	clog.level = o.level
+	clog.random = o.random
 	clog.preStr = append(clog.preStr, o.prefix...)
 }
 

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/cuckooemm/clog"
-	"github.com/cuckooemm/clog/cloghttp"
-	"github.com/cuckooemm/clog/storage"
+	"github.com/ethreads/clog"
+	"github.com/ethreads/clog/cloghttp"
+	"github.com/ethreads/clog/storage"
 	"net/http"
 	"os"
 	"sync"
@@ -22,16 +22,22 @@ func writeLogFile() {
 	//s := storage.NewSizeSplitFile(path).Backups(10).MaxSize(50).SaveTime(4).Compress(3).Finish()
 	s := storage.NewTimeSplitFile(path, time.Minute).Backups(3).SaveTime(3).Compress(2).Finish()
 	defer s.Close()
-	clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Default()
-	clog.Set.BaseTimeDurationInteger()
+	clog.NewOption().WithTimestamp().WithWriter(s).WithRandom(1000).Default()
+	clog.Set.TimeFormat(time.RFC3339Nano)
+	clog.Set.FiledName().TimestampFieldName("tm")
+	clog.SetGlobalLevel(clog.Level(2))
+	log := clog.CopyDefault()
+	log.Info().Msg("receive req data")
+	log.Random(-159403579887936999).Msg("receive req data")
+	return
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		gid := i
 		go func() {
-			for j := 0; j < 1000; j++ {
-				clog.Info().Int("goroutine id", gid).Int("idx", j).Str("msg", "foo").Msg("bar")
-				clog.Warn().TimeDur("timedur", time.Second*3+time.Minute*9).Cease()
+			for j := -1000; j < 1000; j++ {
+				clog.Random(int64(j)).Int("goroutine id", gid).Int("idx", j).Str("msg", "foo").Msg("bar")
+				clog.Random(int64(j)).Int("goroutine id", gid).Int("idx-1", j).Str("msg", "foo").Msg("bar")
 			}
 			wg.Done()
 		}()

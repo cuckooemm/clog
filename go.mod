@@ -1,3 +1,3 @@
-module github.com/cuckooemm/clog
+module github.com/ethreads/clog
 
 go 1.12

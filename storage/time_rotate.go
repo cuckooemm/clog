@@ -3,7 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
-	"github.com/cuckooemm/clog"
+	"github.com/ethreads/clog"
 	"io/ioutil"
 	"os"
 	"path/filepath"

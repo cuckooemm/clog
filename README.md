@@ -4,7 +4,7 @@
 
 
 ### Installation
-`go get -u github.com/cuckooemm/clog`
+`go get -u github.com/ethreads/clog`
 
 ### Getting Started
 
@@ -33,7 +33,7 @@
   - 返回log实例
   ```go
     import (
-	    "github.com/cuckooemm/clog"
+	    "github.com/ethreads/clog"
     )
     log := clog.NewOption().WithLogLevel(clog.InfoLevel).WithTimestamp().WithWriter(s).Logger()
     log.Info().Int("foo", 123).Int("bar", 123).Msg("")

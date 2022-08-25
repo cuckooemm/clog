@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	maxCap  = 1 << 14 // 16KiB
-	initCap = 1 << 9  // 512B
+	maxCap     = 1 << 14 // 16KiB
+	initCap    = 1 << 9  // 512B
+	RandomLine = int64(10000)
 )
 
 // Level defines log levels.
@@ -17,6 +18,8 @@ type Level int8
 const (
 	// DebugLevel debug 日志等级.
 	DebugLevel Level = iota
+	// RandomLevel random 日志等级
+	RandomLevel
 	// InfoLevel info 日志等级.
 	InfoLevel
 	// WarnLevel warn 日志等级.
